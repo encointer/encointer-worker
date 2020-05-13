@@ -18,7 +18,8 @@ std = [
     "clap-nested",
     "log",
     "base58",
-    "sc-keystore"
+    "sc-keystore",
+    "encointer-ceremonies/std",
 ]
 
 [dependencies]

@@ -26,6 +26,7 @@ use sp_application_crypto::{ed25519, sr25519};
 use sp_core::{crypto::Ss58Codec, sr25519 as sr25519_core, Pair};
 use sp_runtime::traits::IdentifyAccount;
 use std::path::PathBuf;
+use encointer_balances::BalanceType;
 
 const KEYSTORE_PATH: &str = "my_trusted_keystore";
 
@@ -163,7 +164,8 @@ pub fn cmd<'a>(
                     let tcall = TrustedCall::balance_transfer(
                         sr25519_core::Public::from(from.public()),
                         to,
-                        amount,
+                        shard, // for encointer we assume that every currency has its own shard. so shard == cid
+                        BalanceType::from_num(amount),
                     );
                     let nonce = 0; // FIXME: hard coded for now
                     let tscall =
@@ -172,52 +174,6 @@ pub fn cmd<'a>(
                         "send trusted call transfer from {} to {}: {}",
                         tscall.call.account(),
                         to,
-                        amount
-                    );
-                    perform_operation(matches, &TrustedOperationSigned::call(tscall));
-                    Ok(())
-                }),
-        )
-        .add_cmd(
-            Command::new("set-balance")
-                .description("ROOT call to set some account balance to an arbitrary number")
-                .options(|app| {
-                    app.arg(
-                        Arg::with_name("account")
-                            .takes_value(true)
-                            .required(true)
-                            .value_name("SS58")
-                            .help("sender's AccountId in ss58check format"),
-                    )
-                    .arg(
-                        Arg::with_name("amount")
-                            .takes_value(true)
-                            .required(true)
-                            .value_name("U128")
-                            .help("amount to be transferred"),
-                    )
-                })
-                .runner(move |_args: &str, matches: &ArgMatches<'_>| {
-                    let arg_who = matches.value_of("account").unwrap();
-                    let amount = u128::from_str_radix(matches.value_of("amount").unwrap(), 10)
-                        .expect("amount can be converted to u128");
-                    let who = get_pair_from_str(matches, arg_who);
-                    let signer = get_pair_from_str(matches, "//AliceIncognito");
-                    info!("account ss58 is {}", who.public().to_ss58check());
-
-                    let (mrenclave, shard) = get_identifiers(matches);
-
-                    let tcall = TrustedCall::balance_set_balance(
-                        sr25519_core::Public::from(who.public()),
-                        amount,
-                        amount,
-                    );
-                    let nonce = 0; // FIXME: hard coded for now
-                    let tscall =
-                        tcall.sign(&sr25519_core::Pair::from(signer), nonce, &mrenclave, &shard);
-                    println!(
-                        "send trusted call set-balance({}, {})",
-                        tscall.call.account(),
                         amount
                     );
                     perform_operation(matches, &TrustedOperationSigned::call(tscall));
@@ -239,8 +195,9 @@ pub fn cmd<'a>(
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
                     let arg_who = matches.value_of("accountid").unwrap();
                     let who = get_pair_from_str(matches, arg_who);
+                    let (mrenclave, shard) = get_identifiers(matches);
                     let tgetter =
-                        TrustedGetter::free_balance(sr25519_core::Public::from(who.public()));
+                        TrustedGetter::balance(sr25519_core::Public::from(who.public()), shard);
                     let tsgetter = tgetter.sign(&sr25519_core::Pair::from(who));
                     perform_operation(matches, &TrustedOperationSigned::get(tsgetter));
                     Ok(())
