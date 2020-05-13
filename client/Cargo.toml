@@ -1,5 +1,5 @@
 [package]
-name = "substratee-client"
+name = "encointer-client"
 version = "0.6.1-sub2.0.0-alpha.7"
 authors = ["Supercomputing Systems AG <info@scs.ch>"]
 edition = "2018"
@@ -52,10 +52,10 @@ version = '2.0.0-alpha.7'
 default-features=false
 
 [dependencies.substratee-node-runtime]
-git = "https://github.com/scs/substraTEE-node"
+git = "https://github.com/encointer/encointer-node"
 #tag = "v0.6.1"
-branch = "alpha.7"
-package = "substratee-node-runtime"
+branch = "sgx-master"
+package = "encointer-node-runtime"
 
 [dependencies.substratee-stf]
 path = "../stf"
