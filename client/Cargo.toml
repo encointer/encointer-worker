@@ -51,7 +51,7 @@ default-features=false
 version = '2.0.0-alpha.7'
 default-features=false
 
-[dependencies.substratee-node-runtime]
+[dependencies.my-node-runtime]
 git = "https://github.com/encointer/encointer-node"
 #tag = "v0.6.1"
 branch = "sgx-master"

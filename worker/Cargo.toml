@@ -44,7 +44,7 @@ path = "../substratee-node-calls"
 [dependencies.substratee-worker-api]
 path = "worker-api"
 
-[dependencies.substratee-node-runtime]
+[dependencies.my-node-runtime]
 git = "https://github.com/encointer/encointer-node"
 #tag = "v0.6.1"
 branch = "sgx-master"

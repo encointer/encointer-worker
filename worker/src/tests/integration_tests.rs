@@ -23,7 +23,7 @@ use sp_keyring::AccountKeyring;
 use std::fs;
 use substrate_api_client::{Api, XtStatus};
 
-use substratee_node_runtime::substratee_registry::Request;
+use my_node_runtime::substratee_registry::Request;
 
 use crate::constants::*;
 use crate::enclave::api::*;
@@ -31,7 +31,7 @@ use crate::enclave_account;
 use crate::tests::commons::*;
 use substrate_api_client::extrinsic::xt_primitives::UncheckedExtrinsicV4;
 use substratee_node_calls::ShardIdentifier;
-use substratee_node_runtime::Header;
+use my_node_runtime::Header;
 use substratee_stf::BalanceTransferFn;
 
 type SubstrateeConfirmCallFn = ([u8; 2], ShardIdentifier, Vec<u8>, Vec<u8>);

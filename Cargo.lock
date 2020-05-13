@@ -596,7 +596,7 @@ dependencies = [
 [[package]]
 name = "encointer-node-runtime"
 version = "0.3.0"
-source = "git+https://github.com/encointer/encointer-node?branch=sgx-master#c54ec0ba456d49c731899fd654b5ce663e19aacf"
+source = "git+https://github.com/encointer/encointer-node?branch=sgx-master#3cbda61156c3a4c390b5952cc0c35d82c3c4da21"
 dependencies = [
  "frame-executive",
  "frame-support",

@@ -34,7 +34,7 @@ use sp_core::{
 };
 use sp_keyring::AccountKeyring;
 use substrate_api_client::{utils::hexstr_to_vec, Api, XtStatus};
-use substratee_node_runtime::{
+use my_node_runtime::{
     substratee_registry::{Request, ShardIdentifier},
     Event, Hash, Header, SignedBlock, UncheckedExtrinsic,
 };
@@ -245,6 +245,7 @@ fn worker(node_url: &str, w_ip: &str, w_port: &str, mu_ra_port: &str, shard: &Sh
     let tee_accountid = enclave_account(eid);
     ensure_account_has_funds(&mut api, &tee_accountid);
 
+    let mut latest_head = init_chain_relay(eid, &api);
     // ------------------------------------------------------------------------
     // perform a remote attestation and get an unchecked extrinsic back
 
@@ -253,9 +254,11 @@ fn worker(node_url: &str, w_ip: &str, w_port: &str, mu_ra_port: &str, shard: &Sh
     info!("Enclave nonce = {:?}", nonce);
 
     let uxt = enclave_perform_ra(eid, genesis_hash, nonce, w_url.as_bytes().to_vec()).unwrap();
-    let mut latest_head = init_chain_relay(eid, &api);
 
     let ue = UncheckedExtrinsic::decode(&mut uxt.as_slice()).unwrap();
+
+    debug!("RA extrinsic: {:?}", ue);
+
     let mut _xthex = hex::encode(ue.encode());
     _xthex.insert_str(0, "0x");
 
@@ -364,7 +367,7 @@ fn handle_events(eid: u64, node_url: &str, events: Events, _sender: Sender<Strin
             Event::substratee_registry(re) => {
                 debug!("{:?}", re);
                 match &re {
-                    substratee_node_runtime::substratee_registry::RawEvent::AddedEnclave(
+                    my_node_runtime::substratee_registry::RawEvent::AddedEnclave(
                         sender,
                         worker_url,
                     ) => {
@@ -376,7 +379,7 @@ fn handle_events(eid: u64, node_url: &str, events: Events, _sender: Sender<Strin
                         );
                         println!();
                     }
-                    substratee_node_runtime::substratee_registry::RawEvent::Forwarded(request) => {
+                    my_node_runtime::substratee_registry::RawEvent::Forwarded(request) => {
                         println!("[+] Received trusted call");
                         info!(
                             "    Request: \n  shard: {}\n  cyphertext: {}",
@@ -385,7 +388,7 @@ fn handle_events(eid: u64, node_url: &str, events: Events, _sender: Sender<Strin
                         );
                         process_request(eid, request.clone(), node_url);
                     }
-                    substratee_node_runtime::substratee_registry::RawEvent::CallConfirmed(
+                    my_node_runtime::substratee_registry::RawEvent::CallConfirmed(
                         sender,
                         payload,
                     ) => {
