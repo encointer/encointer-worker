@@ -111,7 +111,7 @@ pub fn execute_stf(
             Decode::decode(&mut xt_vec.as_slice()).unwrap();
         info!("STF extrinsic: {:?}", xt);
 
-        api.send_extrinsic(xt.hex_encode(), XtStatus::Finalized)
+        api.send_extrinsic(xt.hex_encode(), XtStatus::InBlock)
             .unwrap();
     }
 
@@ -122,7 +122,7 @@ pub fn execute_stf(
         .unwrap();
 
     info!("Call Confirm extrinsic: {:?}", xt);
-    api.send_extrinsic(xt.hex_encode(), XtStatus::Finalized)
+    api.send_extrinsic(xt.hex_encode(), XtStatus::InBlock)
         .unwrap();
 }
 
