@@ -203,6 +203,38 @@ pub fn cmd<'a>(
                     Ok(())
                 }),
         )
+        .add_cmd(
+            Command::new("register-participant")
+                .description("register participant for next encointer ceremony")
+                .options(|app| {
+                    app.arg(
+                        Arg::with_name("accountid")
+                            .takes_value(true)
+                            .required(true)
+                            .value_name("SS58")
+                            .help("AccountId in ss58check format"),
+                    )
+                })
+                .runner(move |_args: &str, matches: &ArgMatches<'_>| {
+                    let arg_who = matches.value_of("accountid").unwrap();
+                    let who = get_pair_from_str(matches, arg_who);
+                    let (mrenclave, shard) = get_identifiers(matches);
+                    let tcall = TrustedCall::ceremonies_register_participant(
+                        sr25519_core::Public::from(who.public()),
+                        shard, // for encointer we assume that every currency has its own shard. so shard == cid
+                        None
+                    );
+                    let nonce = 0; // FIXME: hard coded for now
+                    let tscall =
+                        tcall.sign(&sr25519_core::Pair::from(who), nonce, &mrenclave, &shard);
+                    println!(
+                        "send trusted call register_participant for {}",
+                        tscall.call.account(),
+                    );
+                    perform_operation(matches, &TrustedOperationSigned::call(tscall));
+                    Ok(())
+                }),
+        )
         .into_cmd("trusted")
 }
 
