@@ -126,7 +126,10 @@ impl Stf {
             },
             TrustedGetter::get_registration(who, cid) => {
                 Some(get_ceremony_registration(&who, &cid).encode())
-            }            
+            }
+            TrustedGetter::get_meetup_time_and_location(who, cid) => {
+                unimplemented!("get_meetup_time_and_location is unimplemented");
+            }
         })
     }
 
@@ -177,10 +180,17 @@ impl Stf {
     }
 
     pub fn storage_hashes_to_update_on_block() -> Vec<Vec<u8>> {
-        // let key_hashes = Vec::new();
-        // key_hashes.push(storage_value_key("dummy", "dummy"));
-        // key_hashes
-        Vec::new()
+        let mut key_hashes = Vec::new();
+
+        key_hashes.push(storage_value_key("EncointerScheduler", "CurrentPhase"));
+        key_hashes.push(storage_value_key("EncointerScheduler", "CurrentCeremonyIndex"));
+        key_hashes.push(storage_value_key("EncointerScheduler", "NextPhaseTimestamp"));
+        key_hashes.push(storage_value_key("EncointerScheduler", "PhaseDurations"));
+        key_hashes.push(storage_value_key("EncointerCurrencies", "CurrencyIdentifiers"));
+        key_hashes.push(storage_value_key("EncointerCurrencies", "Bootstrappers"));
+        key_hashes.push(storage_value_key("EncointerCurrencies", "Locations"));
+
+        key_hashes
     }
 }
 
