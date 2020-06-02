@@ -10,7 +10,7 @@ use sgx_runtime::{Balance, Runtime};
 use sp_core::crypto::{AccountId32, Ss58Codec};
 use sp_io::SgxExternalitiesTrait;
 use sp_runtime::traits::Dispatchable;
-use encointer_scheduler::{CeremonyIndexType, CeremonyPhaseType};
+use encointer_scheduler::{CeremonyIndexType, CeremonyPhaseType, OnCeremonyPhaseChange};
 use encointer_balances::BalanceType;
 use encointer_currencies::CurrencyIdentifier;
 use encointer_ceremonies::{ParticipantIndexType, MeetupIndexType};
@@ -66,6 +66,15 @@ impl Stf {
 
     pub fn update_storage(ext: &mut State, map_update: &HashMap<Vec<u8>, Vec<u8>>) {
         ext.execute_with(|| {
+            let key = storage_value_key("EncointerScheduler", "CurrentPhase");
+            let next_phase = map_update.get(&key);
+
+            if next_phase.is_some() && next_phase != sp_io::storage::get(&key).as_ref() {
+                if let Ok(next_phase) = CeremonyPhaseType::decode(&mut &next_phase.unwrap()[..]) {
+                    encointer_ceremonies::Module::<sgx_runtime::Runtime>::on_ceremony_phase_change(next_phase);
+                }
+            }
+
             map_update
                 .iter()
                 .for_each(|(k, v)| sp_io::storage::set(k, v))
