@@ -92,6 +92,13 @@ impl Stf {
                     .map_err(|_| StfError::Dispatch)?;
                 Ok(())
             }
+            TrustedCall::ceremonies_register_attestations(from, attestations) => {
+                let origin = sgx_runtime::Origin::signed(AccountId32::from(from));
+                sgx_runtime::EncointerCeremoniesCall::<Runtime>::register_attestations(attestations)
+                    .dispatch(origin)
+                    .map_err(|_| StfError::Dispatch)?;
+                Ok(())
+            }
         })
     }
 
@@ -119,8 +126,13 @@ impl Stf {
         match call.call {
             TrustedCall::balance_transfer(account, _, _, _) => {
                 key_hashes.push(nonce_key_hash(&account))
-            },
+            }
             TrustedCall::ceremonies_register_participant(account, _, _) => {
+                key_hashes.push(storage_value_key("EncointerScheduler", "CurrentPhase"));
+                key_hashes.push(storage_value_key("EncointerScheduler", "CurrentCeremonyIndex"));
+                key_hashes.push(storage_value_key("EncointerCurrencies", "CurrencyIdentifiers"));
+            }
+            TrustedCall::ceremonies_register_attestations(_, _) => {
                 key_hashes.push(storage_value_key("EncointerScheduler", "CurrentPhase"));
                 key_hashes.push(storage_value_key("EncointerScheduler", "CurrentCeremonyIndex"));
                 key_hashes.push(storage_value_key("EncointerCurrencies", "CurrencyIdentifiers"));
