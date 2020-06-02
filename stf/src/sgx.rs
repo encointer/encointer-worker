@@ -99,6 +99,14 @@ impl Stf {
                     .map_err(|_| StfError::Dispatch)?;
                 Ok(())
             }
+            TrustedCall::ceremonies_grant_reputation(ceremony_master, cid, reputable) => {
+                Self::ensure_ceremony_master(ceremony_master)?;
+                let origin = sgx_runtime::Origin::signed(AccountId32::from(ceremony_master));
+                sgx_runtime::EncointerCeremoniesCall::<Runtime>::grant_reputation(cid, reputable)
+                    .dispatch(origin)
+                    .map_err(|_| StfError::Dispatch)?;
+                Ok(())
+            }
         })
     }
 
@@ -121,6 +129,14 @@ impl Stf {
         }
     }
 
+    fn ensure_ceremony_master(account: AccountId) -> Result<(), StfError> {
+        if sp_io::storage::get(&storage_value_key("EncointerScheduler", "CeremonyMaster")).unwrap() == account.encode() {
+            Ok(())
+        } else {
+            Err(StfError::MissingPrivileges(account))
+        }
+    }
+
     pub fn get_storage_hashes_to_update(call: &TrustedCallSigned) -> Vec<Vec<u8>> {
         let mut key_hashes = Vec::new();
         match call.call {
@@ -136,6 +152,10 @@ impl Stf {
                 key_hashes.push(storage_value_key("EncointerScheduler", "CurrentPhase"));
                 key_hashes.push(storage_value_key("EncointerScheduler", "CurrentCeremonyIndex"));
                 key_hashes.push(storage_value_key("EncointerCurrencies", "CurrencyIdentifiers"));
+            }
+            TrustedCall::ceremonies_grant_reputation(_, _, _) => {
+                key_hashes.push(storage_value_key("EncointerScheduler", "CurrentCeremonyIndex"));
+                key_hashes.push(storage_value_key("EncointerScheduler", "CeremonyMaster"));
             }
         };
         key_hashes

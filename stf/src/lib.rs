@@ -74,6 +74,7 @@ pub enum TrustedCall {
     balance_transfer(AccountId, AccountId, CurrencyIdentifier, BalanceType),
     ceremonies_register_participant(AccountId, CurrencyIdentifier, Option<ProofOfAttendance<MultiSignature, AccountId32>>),
     ceremonies_register_attestations(AccountId, Vec<Attestation<MultiSignature, AccountId32, u64>>),
+    ceremonies_grant_reputation(AccountId, CurrencyIdentifier, AccountId32)
 }
 
 impl TrustedCall {
@@ -82,6 +83,7 @@ impl TrustedCall {
             TrustedCall::balance_transfer(account, _, _, _) => account,
             TrustedCall::ceremonies_register_participant(account, _, _) => account,
             TrustedCall::ceremonies_register_attestations(account, _) => account,
+            TrustedCall::ceremonies_grant_reputation(account, _, _) => account,
         }
     }
 
