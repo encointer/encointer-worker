@@ -111,14 +111,14 @@ impl TrustedCall {
 #[allow(non_camel_case_types)]
 pub enum TrustedGetter {
     balance(AccountId, CurrencyIdentifier),
-    ceremony_registration(AccountId, CurrencyIdentifier)
+    get_registration(AccountId, CurrencyIdentifier),
 }
 
 impl TrustedGetter {
     pub fn account(&self) -> &AccountId {
         match self {
             TrustedGetter::balance(account, _) => account,
-            TrustedGetter::ceremony_registration(account, _) => account,
+            TrustedGetter::get_registration(account, _) => account,
         }
     }
 

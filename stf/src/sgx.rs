@@ -115,7 +115,7 @@ impl Stf {
             TrustedGetter::balance(who, cid) => {
                 Some(get_encointer_balance(&who, &cid).encode())
             },
-            TrustedGetter::ceremony_registration(who, cid) => {
+            TrustedGetter::get_registration(who, cid) => {
                 Some(get_ceremony_registration(&who, &cid).encode())
             }            
         })

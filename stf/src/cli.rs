@@ -245,7 +245,7 @@ pub fn cmd<'a>(
                     let who = get_pair_from_str(matches, arg_who);
                     let (mrenclave, shard) = get_identifiers(matches);
                     let tgetter =
-                        TrustedGetter::ceremony_registration(sr25519_core::Public::from(who.public()), shard);
+                        TrustedGetter::get_registration(sr25519_core::Public::from(who.public()), shard);
                     let tsgetter = tgetter.sign(&sr25519_core::Pair::from(who));
                     perform_operation(matches, &TrustedOperationSigned::get(tsgetter));
                     Ok(())
