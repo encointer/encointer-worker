@@ -155,20 +155,7 @@ impl Stf {
             TrustedCall::balance_transfer(account, _, _, _) => {
                 key_hashes.push(nonce_key_hash(&account))
             }
-            TrustedCall::ceremonies_register_participant(account, _, _) => {
-                key_hashes.push(storage_value_key("EncointerScheduler", "CurrentPhase"));
-                key_hashes.push(storage_value_key("EncointerScheduler", "CurrentCeremonyIndex"));
-                key_hashes.push(storage_value_key("EncointerCurrencies", "CurrencyIdentifiers"));
-            }
-            TrustedCall::ceremonies_register_attestations(_, _) => {
-                key_hashes.push(storage_value_key("EncointerScheduler", "CurrentPhase"));
-                key_hashes.push(storage_value_key("EncointerScheduler", "CurrentCeremonyIndex"));
-                key_hashes.push(storage_value_key("EncointerCurrencies", "CurrencyIdentifiers"));
-            }
-            TrustedCall::ceremonies_grant_reputation(_, _, _) => {
-                key_hashes.push(storage_value_key("EncointerScheduler", "CurrentCeremonyIndex"));
-                key_hashes.push(storage_value_key("EncointerScheduler", "CeremonyMaster"));
-            }
+            _ => info!("No storage updates needed for call: {:?}", call.call) // all relevant storages are updated on block import already.
         };
         key_hashes
     }
