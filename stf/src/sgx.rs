@@ -128,7 +128,11 @@ impl Stf {
                 Some(get_ceremony_registration(&who, &cid).encode())
             }
             TrustedGetter::get_meetup_time_and_location(who, cid) => {
-                unimplemented!("get_meetup_time_and_location is unimplemented");
+                let c_index = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
+                let metup_index = encointer_ceremonies::Module::<sgx_runtime::Runtime>::meetup_index((cid, c_index), AccountId32::from(who));
+                let location = encointer_ceremonies::Module::<sgx_runtime::Runtime>::get_meetup_location(&cid, metup_index);
+                let time =  encointer_ceremonies::Module::<sgx_runtime::Runtime>::get_meetup_time(&cid, metup_index);
+                Some((location, time).encode())
             }
         })
     }
