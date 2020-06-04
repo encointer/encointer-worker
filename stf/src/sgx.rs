@@ -101,21 +101,21 @@ impl Stf {
                 let origin = sgx_runtime::Origin::signed(AccountId32::from(from));
                 sgx_runtime::EncointerBalancesCall::<Runtime>::transfer(AccountId32::from(to), cid, value)
                     .dispatch(origin)
-                    .map_err(|_| StfError::Dispatch)?;
+                    .map_err(|_| StfError::Dispatch("balance_transfer".to_string()))?;
                 Ok(())
             }
             TrustedCall::ceremonies_register_participant(from, cid, proof) => {
                 let origin = sgx_runtime::Origin::signed(AccountId32::from(from));
                 sgx_runtime::EncointerCeremoniesCall::<Runtime>::register_participant(cid, proof)
                     .dispatch(origin)
-                    .map_err(|_| StfError::Dispatch)?;
+                    .map_err(|_| StfError::Dispatch("ceremonies_register_participant".to_string()))?;
                 Ok(())
             }
             TrustedCall::ceremonies_register_attestations(from, attestations) => {
                 let origin = sgx_runtime::Origin::signed(AccountId32::from(from));
                 sgx_runtime::EncointerCeremoniesCall::<Runtime>::register_attestations(attestations)
                     .dispatch(origin)
-                    .map_err(|_| StfError::Dispatch)?;
+                    .map_err(|_| StfError::Dispatch("ceremonies_register_attestations".to_string()))?;
                 Ok(())
             }
             TrustedCall::ceremonies_grant_reputation(ceremony_master, cid, reputable) => {
@@ -123,7 +123,7 @@ impl Stf {
                 let origin = sgx_runtime::Origin::signed(AccountId32::from(ceremony_master));
                 sgx_runtime::EncointerCeremoniesCall::<Runtime>::grant_reputation(cid, reputable)
                     .dispatch(origin)
-                    .map_err(|_| StfError::Dispatch)?;
+                    .map_err(|_| StfError::Dispatch("ceremonies_grant_reputation".to_string()))?;
                 Ok(())
             }
         })
@@ -195,6 +195,13 @@ impl Stf {
     pub fn get_storage_hashes_to_update_for_getter(getter: &TrustedGetterSigned) -> Vec<Vec<u8>> {
         info!("No specific storage updates needed for getter. Returning those for on block: {:?}", getter.getter);
         // in case that a getter has been called on a previously unitialized shard
+        match getter.getter {
+            TrustedGetter::balance(who, cid) => info!("Nothing to be fetched for {:?}", getter.getter),
+            TrustedGetter::get_attestations(who, cid) => info!(""),
+            TrustedGetter::get_meetup_time_and_location(who, cid) => info!(""),
+            TrustedGetter::get_registration(who, cid) => info!("")
+        };
+
         Self::storage_hashes_to_update_on_block()
     }
 
@@ -206,11 +213,11 @@ impl Stf {
         key_hashes.push(storage_value_key("EncointerScheduler", "NextPhaseTimestamp"));
         key_hashes.push(storage_value_key("EncointerScheduler", "PhaseDurations"));
         key_hashes.push(storage_value_key("EncointerCurrencies", "CurrencyIdentifiers"));
-        key_hashes.push(storage_value_key("EncointerCurrencies", "Bootstrappers"));
-        key_hashes.push(storage_value_key("EncointerCurrencies", "Locations"));
 
         key_hashes
     }
+}
+
 
 pub fn bootstrapper_key_hash(cid: &CurrencyIdentifier) -> Vec<u8> {
     storage_map_key("EncointerCurrencies", "Bootstrappers", cid, &StorageHasher::Blake2_128Concat)
@@ -357,7 +364,7 @@ pub enum StfError {
     #[display(fmt = "Insufficient privileges {:?}, are you sure you are root?", _0)]
     MissingPrivileges(AccountId),
     #[display(fmt = "Error dispatching runtime call")]
-    Dispatch,
+    Dispatch(String),
     #[display(fmt = "Not enough funds to perform operation")]
     MissingFunds,
     #[display(fmt = "Account does not exist {:?}", _0)]
