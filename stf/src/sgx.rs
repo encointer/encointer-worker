@@ -212,9 +212,15 @@ impl Stf {
         key_hashes
     }
 
-    pub fn currency_identifiers() -> Vec<CurrencyIdentifier> {
-        encointer_currencies::Module::<sgx_runtime::Runtime>::currency_identifiers()
-    }
+pub fn bootstrapper_key_hash(cid: &CurrencyIdentifier) -> Vec<u8> {
+    storage_map_key("EncointerCurrencies", "Bootstrappers", cid, &StorageHasher::Blake2_128Concat)
+}
+pub fn location_key_hash(cid: &CurrencyIdentifier) -> Vec<u8> {
+    storage_map_key("EncointerCurrencies", "Locations", cid, &StorageHasher::Blake2_128Concat)
+}
+
+pub fn currency_identifier_key_hash() -> Vec<u8> {
+    storage_value_key("EncointerCurrencies", "CurrencyIdentifiers")
 }
 
 // get the AccountInfo key where the nonce is stored

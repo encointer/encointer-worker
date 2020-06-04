@@ -62,7 +62,7 @@ use chain_relay::{
 use sp_runtime::OpaqueExtrinsic;
 use sp_runtime::{generic::SignedBlock, traits::Header as HeaderT};
 use substrate_api_client::extrinsic::xt_primitives::UncheckedExtrinsicV4;
-use substratee_stf::sgx::OpaqueCall;
+use substratee_stf::sgx::{OpaqueCall, currency_identifier_key_hash, location_key_hash, bootstrapper_key_hash};
 
 mod aes;
 mod attestation;
@@ -377,10 +377,11 @@ pub fn update_states(header: Header) -> SgxResult<()> {
         return Ok(());
     }
 
+    // global requests they are the same for every shard
     let responses: Vec<WorkerResponse<Vec<u8>>> = worker_request(requests)?;
-    let update_map = verify_worker_responses(responses, header)?;
+    let update_map = verify_worker_responses(responses, header.clone())?;
     // look for new shards an initialize them
-    if let Some(maybe_shards) = update_map.get(&substratee_stf::sgx::currency_identifier_key_hash()) {
+    if let Some(maybe_shards) = update_map.get(&currency_identifier_key_hash()) {
         match maybe_shards {
             Some(shards) => {
                 let shards: Vec<ShardIdentifier> = Decode::decode(&mut shards.as_slice()).sgx_error_with_log("error decoding shards")?;
@@ -389,19 +390,24 @@ pub fn update_states(header: Header) -> SgxResult<()> {
                         info!("Initialized new shard that was found on chain: {:?}", s);
                         state::init_shard(&s)?;
                     }
+                    // per shard (cid) requests
+                    let per_shard_request = vec![bootstrapper_key_hash(&s), location_key_hash(&s)]
+                        .into_iter()
+                        .map(|key| WorkerRequest::ChainStorage(key, Some(header.hash())))
+                        .collect();
+
+                    let responses: Vec<WorkerResponse<Vec<u8>>> = worker_request(per_shard_request)?;
+                    let per_shard_update_map = verify_worker_responses(responses, header.clone())?;
+
+                    let mut state = state::load(&s)?;
+                    Stf::update_storage(&mut state, &per_shard_update_map);
+                    Stf::update_storage(&mut state, &update_map);
+                    state::write(state, &s)?;
                 }
             }
             None => info!("No shards are on the chain yet")
         };
     };
-
-    let shards = state::list_shards()?;
-    debug!("found shards: {:?}", shards);
-    for s in shards {
-        let mut state = state::load(&s)?;
-        Stf::update_storage(&mut state, &update_map);
-        state::write(state, &s)?;
-    }
     Ok(())
 }
 
