@@ -68,16 +68,17 @@ impl Stf {
         ext.execute_with(|| {
             let key = storage_value_key("EncointerScheduler", "CurrentPhase");
             let next_phase = map_update.get(&key);
+            let curr_phase = sp_io::storage::get(&key);
 
-            if next_phase.is_some() && next_phase != sp_io::storage::get(&key).as_ref() {
+            map_update
+                .iter()
+                .for_each(|(k, v)| sp_io::storage::set(k, v));
+
+            if next_phase.is_some() && next_phase != curr_phase.as_ref() {
                 if let Ok(next_phase) = CeremonyPhaseType::decode(&mut &next_phase.unwrap()[..]) {
                     encointer_ceremonies::Module::<sgx_runtime::Runtime>::on_ceremony_phase_change(next_phase);
                 }
             }
-
-            map_update
-                .iter()
-                .for_each(|(k, v)| sp_io::storage::set(k, v))
         });
     }
 
