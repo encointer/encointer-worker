@@ -348,7 +348,7 @@ pub unsafe extern "C" fn sync_chain_relay(
             return sgx_status_t::SGX_ERROR_UNEXPECTED;
         }
 
-        if update_states(signed_block.block.header).is_err() {
+        if update_states(signed_block.block.header.clone()).is_err() {
             error!("Error performing state updates upon block import")
         }
 
@@ -379,14 +379,25 @@ pub fn update_states(header: Header) -> SgxResult<()> {
 
     let responses: Vec<WorkerResponse<Vec<u8>>> = worker_request(requests)?;
     let update_map = verify_worker_responses(responses, header)?;
+    // look for new shards an initialize them
+    if let Some(maybe_shards) = update_map.get(&substratee_stf::sgx::currency_identifier_key_hash()) {
+        match maybe_shards {
+            Some(shards) => {
+                let shards: Vec<ShardIdentifier> = Decode::decode(&mut shards.as_slice()).sgx_error_with_log("error decoding shards")?;
+                for s in shards {
+                    if !state::exists(&s) {
+                        info!("Initialized new shard that was found on chain: {:?}", s);
+                        state::init_shard(&s)?;
+                    }
+                }
+            }
+            None => info!("No shards are on the chain yet")
+        };
+    };
 
-    let shards = Stf::currency_identifiers();
+    let shards = state::list_shards()?;
     debug!("found shards: {:?}", shards);
     for s in shards {
-        if !state::exists(&s) {
-            state::init_shard(&s)?;
-        }
-
         let mut state = state::load(&s)?;
         Stf::update_storage(&mut state, &update_map);
         state::write(state, &s)?;
@@ -482,7 +493,7 @@ fn handle_call_worker_xt(
 fn verify_worker_responses(
     responses: Vec<WorkerResponse<Vec<u8>>>,
     header: Header,
-) -> SgxResult<HashMap<Vec<u8>, Vec<u8>>> {
+) -> SgxResult<HashMap<Vec<u8>, Option<Vec<u8>>>> {
     let mut update_map = HashMap::new();
     for response in responses.iter() {
         match response {
@@ -503,10 +514,7 @@ fn verify_worker_responses(
                     error!("Wrong storage value supplied");
                     return Err(sgx_status_t::SGX_ERROR_UNEXPECTED);
                 }
-
-                if let Some(val) = value {
-                    update_map.insert(key.clone(), val.clone());
-                }
+                update_map.insert(key.clone(), value.clone());
             }
         }
     }

@@ -64,17 +64,26 @@ impl Stf {
         ext
     }
 
-    pub fn update_storage(ext: &mut State, map_update: &HashMap<Vec<u8>, Vec<u8>>) {
+    pub fn update_storage(ext: &mut State, map_update: &HashMap<Vec<u8>, Option<Vec<u8>>>) {
         ext.execute_with(|| {
             let key = storage_value_key("EncointerScheduler", "CurrentPhase");
-            let next_phase = map_update.get(&key);
+
+            let next_phase = match map_update.get(&key) {
+                Some(maybe_phase) => maybe_phase.to_owned(),
+                None => None,
+            };
             let curr_phase = sp_io::storage::get(&key);
 
             map_update
                 .iter()
-                .for_each(|(k, v)| sp_io::storage::set(k, v));
+                .for_each(|(k, v)| {
+                    match v {
+                        Some(value) => sp_io::storage::set(k, value),
+                        None => sp_io::storage::clear(k)
+                    };
+                });
 
-            if next_phase.is_some() && next_phase != curr_phase.as_ref() {
+            if next_phase.is_some() && next_phase != curr_phase {
                 if let Ok(next_phase) = CeremonyPhaseType::decode(&mut &next_phase.unwrap()[..]) {
                     encointer_ceremonies::Module::<sgx_runtime::Runtime>::on_ceremony_phase_change(next_phase);
                 }
