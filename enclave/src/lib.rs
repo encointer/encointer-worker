@@ -218,9 +218,17 @@ pub unsafe extern "C" fn get_state(
         return sgx_status_t::SGX_ERROR_UNEXPECTED;
     }
 
-    let mut state = match state::load(&shard) {
-        Ok(s) => s,
-        Err(status) => return status,
+    let mut state = if state::exists(&shard) {
+        match state::load(&shard) {
+            Ok(s) => s,
+            Err(status) => return status
+        }
+    } else {
+        match state::init_shard(&shard) {
+            Ok(s) => s,
+            Err(status) => return status
+        };
+        Stf::init_state()
     };
 
     let validator = match io::light_validation::unseal() {
@@ -599,7 +607,7 @@ fn worker_request<V: Encode + Decode>(
     req: Vec<WorkerRequest>,
 ) -> SgxResult<Vec<WorkerResponse<V>>> {
     let mut rt: sgx_status_t = sgx_status_t::SGX_ERROR_UNEXPECTED;
-    let mut resp: Vec<u8> = vec![0; 4196];
+    let mut resp: Vec<u8> = vec![0; 4196 * 4];
 
     let res = unsafe {
         ocall_worker_request(
