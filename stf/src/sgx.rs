@@ -202,6 +202,10 @@ impl Stf {
 
         key_hashes
     }
+
+    pub fn currency_identifiers() -> Vec<CurrencyIdentifier> {
+        encointer_currencies::Module::<sgx_runtime::Runtime>::currency_identifiers()
+    }
 }
 
 // get the AccountInfo key where the nonce is stored

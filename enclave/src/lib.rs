@@ -218,17 +218,9 @@ pub unsafe extern "C" fn get_state(
         return sgx_status_t::SGX_ERROR_UNEXPECTED;
     }
 
-    let mut state = if state::exists(&shard) {
-        match state::load(&shard) {
-            Ok(s) => s,
-            Err(status) => return status
-        }
-    } else {
-        match state::init_shard(&shard) {
-            Ok(s) => s,
-            Err(status) => return status
-        };
-        Stf::init_state()
+    let mut state = match state::load(&shard) {
+        Ok(s) => s,
+        Err(status) => return status
     };
 
     let validator = match io::light_validation::unseal() {
@@ -356,14 +348,15 @@ pub unsafe extern "C" fn sync_chain_relay(
             return sgx_status_t::SGX_ERROR_UNEXPECTED;
         }
 
+        if update_states(signed_block.block.header).is_err() {
+            error!("Error performing state updates upon block import")
+        }
+
         match scan_block_for_relevant_xt(&signed_block.block) {
             Ok(c) => calls.extend(c.into_iter()),
             Err(_) => error!("Error executing relevant extrinsics"),
         };
 
-        if update_states(signed_block.block.header).is_err() {
-            error!("Error performing state updates upon block import")
-        }
     }
 
     if let Err(_e) = stf_post_actions(validator, calls, xt_slice, *nonce) {
@@ -387,9 +380,13 @@ pub fn update_states(header: Header) -> SgxResult<()> {
     let responses: Vec<WorkerResponse<Vec<u8>>> = worker_request(requests)?;
     let update_map = verify_worker_responses(responses, header)?;
 
-    let shards = state::list_shards()?;
+    let shards = Stf::currency_identifiers();
     debug!("found shards: {:?}", shards);
     for s in shards {
+        if !state::exists(&s) {
+            state::init_shard(&s)?;
+        }
+
         let mut state = state::load(&s)?;
         Stf::update_storage(&mut state, &update_map);
         state::write(state, &s)?;
@@ -449,12 +446,7 @@ fn handle_call_worker_xt(
         return Ok(());
     }
 
-    let mut state = if state::exists(&shard) {
-        state::load(&shard)?
-    } else {
-        state::init_shard(&shard)?;
-        Stf::init_state()
-    };
+    let mut state = state::load(&shard)?;
 
     debug!("Update STF storage!");
     let requests = Stf::get_storage_hashes_to_update(&stf_call_signed)
