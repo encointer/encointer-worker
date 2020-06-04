@@ -165,15 +165,28 @@ impl Stf {
             TrustedCall::balance_transfer(account, _, _, _) => {
                 key_hashes.push(nonce_key_hash(&account))
             }
-            _ => info!("No storage updates needed for call: {:?}", call.call) // all relevant storages are updated on block import already.
+            TrustedCall::ceremonies_register_participant(_, _, _) => {
+                key_hashes.push(storage_value_key("EncointerScheduler", "CurrentPhase"));
+                key_hashes.push(storage_value_key("EncointerScheduler", "CurrentCeremonyIndex"));
+                key_hashes.push(storage_value_key("EncointerCurrencies", "CurrencyIdentifiers"));
+            }
+            TrustedCall::ceremonies_register_attestations(_, _) => {
+                key_hashes.push(storage_value_key("EncointerScheduler", "CurrentPhase"));
+                key_hashes.push(storage_value_key("EncointerScheduler", "CurrentCeremonyIndex"));
+                key_hashes.push(storage_value_key("EncointerCurrencies", "CurrencyIdentifiers"));
+            }
+            TrustedCall::ceremonies_grant_reputation(_, _, _) => {
+                key_hashes.push(storage_value_key("EncointerScheduler", "CurrentCeremonyIndex"));
+                key_hashes.push(storage_value_key("EncointerScheduler", "CeremonyMaster"));
+            }
         };
         key_hashes
     }
 
     pub fn get_storage_hashes_to_update_for_getter(getter: &TrustedGetterSigned) -> Vec<Vec<u8>> {
-        let key_hashes = Vec::new();
-        info!("No storage updates needed for getter: {:?}", getter.getter); // dummy. Is currently not needed
-        key_hashes
+        info!("No specific storage updates needed for getter. Returning those for on block: {:?}", getter.getter);
+        // in case that a getter has been called on a previously unitialized shard
+        Self::storage_hashes_to_update_on_block()
     }
 
     pub fn storage_hashes_to_update_on_block() -> Vec<Vec<u8>> {
