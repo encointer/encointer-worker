@@ -218,6 +218,13 @@ pub unsafe extern "C" fn get_state(
         return sgx_status_t::SGX_ERROR_UNEXPECTED;
     }
 
+    if !state::exists(&shard) {
+        info!("Initialized new shard that was queried chain: {:?}", shard);
+        if let Err(e) = state::init_shard(&shard) {
+            return e;
+        }
+    }
+
     let mut state = match state::load(&shard) {
         Ok(s) => s,
         Err(status) => return status
@@ -401,6 +408,7 @@ pub fn update_states(header: Header) -> SgxResult<()> {
 
                     let mut state = state::load(&s)?;
                     Stf::update_storage(&mut state, &per_shard_update_map);
+                    warn!("in betweeen storage updates");
                     Stf::update_storage(&mut state, &update_map);
                     state::write(state, &s)?;
                 }
