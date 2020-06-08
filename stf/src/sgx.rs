@@ -137,12 +137,12 @@ impl Stf {
             TrustedGetter::get_registration(who, cid) => {
                 Some(get_ceremony_registration(&who, &cid).encode())
             }
-            TrustedGetter::get_meetup_time_and_location(who, cid) => {
+            TrustedGetter::get_meetup_index_time_and_location(who, cid) => {
                 let c_index = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
-                let metup_index = encointer_ceremonies::Module::<sgx_runtime::Runtime>::meetup_index((cid, c_index), AccountId32::from(who));
-                let location = encointer_ceremonies::Module::<sgx_runtime::Runtime>::get_meetup_location(&cid, metup_index);
-                let time =  encointer_ceremonies::Module::<sgx_runtime::Runtime>::get_meetup_time(&cid, metup_index);
-                Some((location, time).encode())
+                let meetup_index = encointer_ceremonies::Module::<sgx_runtime::Runtime>::meetup_index((cid, c_index), AccountId32::from(who));
+                let location = encointer_ceremonies::Module::<sgx_runtime::Runtime>::get_meetup_location(&cid, meetup_index);
+                let time =  encointer_ceremonies::Module::<sgx_runtime::Runtime>::get_meetup_time(&cid, meetup_index);
+                Some((meetup_index, time, location).encode())
             }
             TrustedGetter::get_attestations(who, cid) => {
                 let c_index = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
@@ -198,7 +198,7 @@ impl Stf {
         match getter.getter {
             TrustedGetter::balance(who, cid) => info!("Nothing to be fetched for {:?}", getter.getter),
             TrustedGetter::get_attestations(who, cid) => info!(""),
-            TrustedGetter::get_meetup_time_and_location(who, cid) => info!(""),
+            TrustedGetter::get_meetup_index_time_and_location(who, cid) => info!(""),
             TrustedGetter::get_registration(who, cid) => info!("")
         };
 

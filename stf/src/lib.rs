@@ -112,7 +112,7 @@ impl TrustedCall {
 pub enum TrustedGetter {
     balance(AccountId, CurrencyIdentifier),
     get_registration(AccountId, CurrencyIdentifier),
-    get_meetup_time_and_location(AccountId, CurrencyIdentifier),
+    get_meetup_index_time_and_location(AccountId, CurrencyIdentifier),
     get_attestations(AccountId, CurrencyIdentifier)
 }
 
@@ -121,7 +121,7 @@ impl TrustedGetter {
         match self {
             TrustedGetter::balance(account, _) => account,
             TrustedGetter::get_registration(account, _) => account,
-            TrustedGetter::get_meetup_time_and_location(account, _) => account,
+            TrustedGetter::get_meetup_index_time_and_location(account, _) => account,
             TrustedGetter::get_attestations(account, _) => account,
         }
     }
