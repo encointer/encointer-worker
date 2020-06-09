@@ -106,6 +106,11 @@ impl Stf {
             }
             TrustedCall::ceremonies_register_participant(from, cid, proof) => {
                 let origin = sgx_runtime::Origin::signed(AccountId32::from(from));
+
+                if encointer_scheduler::Module::<sgx_runtime::Runtime>::current_phase() != CeremonyPhaseType::REGISTERING {
+                    return Err(StfError::Dispatch("registering participants can only be done during REGISTERING phase".to_string()))
+                }
+
                 sgx_runtime::EncointerCeremoniesCall::<Runtime>::register_participant(cid, proof)
                     .dispatch(origin)
                     .map_err(|_| StfError::Dispatch("ceremonies_register_participant".to_string()))?;
