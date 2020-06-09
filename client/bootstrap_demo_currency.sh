@@ -67,7 +67,7 @@ $CLIENT trusted register-participant $account1 --mrenclave $MRENCLAVE --shard $c
 $CLIENT trusted register-participant $account2 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
 $CLIENT trusted register-participant $account3 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
 
-echo "Registered Participants"
+echo "*** registered participants"
 
 # should be 1,2 and 3
 $CLIENT trusted get-registration $account1 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
@@ -76,8 +76,6 @@ $CLIENT trusted get-registration $account3 --mrenclave $MRENCLAVE --shard $cid $
 
 $CLIENT next-phase
 # should now be ASSIGNING
-
-#$CLIENT --cid $cid list-meetup-registry
 
 $CLIENT next-phase
 # should now be ATTESTING
