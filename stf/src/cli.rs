@@ -250,7 +250,7 @@ pub fn cmd<'a>(
                     let arg_who = matches.value_of("accountid").unwrap();
                     let who = get_pair_from_str(matches, arg_who);
                     let (_mrenclave, shard) = get_identifiers(matches);
-                    let tgetter = TrustedGetter::get_registration(
+                    let tgetter = TrustedGetter::registration(
                         sr25519_core::Public::from(who.public()),
                         shard, // for encointer we assume that every currency has its own shard. so shard == cid
                     );
@@ -329,7 +329,7 @@ pub fn cmd<'a>(
                     let arg_who = matches.value_of("accountid").unwrap();
                     let who = get_pair_from_str(matches, arg_who);
                     let (_mrenclave, shard) = get_identifiers(matches);
-                    let tgetter = TrustedGetter::get_attestations(
+                    let tgetter = TrustedGetter::attestations(
                         sr25519_core::Public::from(who.public()),
                         shard, // for encointer we assume that every currency has its own shard. so shard == cid
                     );
@@ -375,7 +375,7 @@ pub fn cmd<'a>(
 
                     let (_mrenclave, shard) = get_identifiers(matches);
 
-                    let tgetter = TrustedGetter::get_meetup_index_time_and_location(who.public().into(), shard);
+                    let tgetter = TrustedGetter::meetup_index_time_and_location(who.public().into(), shard);
                     let tsgetter = tgetter.sign(&sr25519_core::Pair::from(who.clone()));
 
                     let res = perform_operation(matches, &TrustedOperationSigned::get(tsgetter)).unwrap();
