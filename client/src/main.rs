@@ -344,17 +344,17 @@ fn main() {
                             .takes_value(true)
                             .required(true)
                             .help("a bootstrapper account to sign the registration extrinsic"),
-                    )                    
+                    )
                 })
                 .runner(|_args: &str, matches: &ArgMatches<'_>| {
                     let p_arg = matches.value_of("signer").unwrap();
                     let signer = get_pair_from_str(p_arg);
-            
+
                     let spec_file = matches.value_of("specfile").unwrap();
-            
+
                     let spec_str = fs::read_to_string(spec_file).unwrap();
                     let geoloc = spec_str.parse::<GeoJson>().unwrap();
-            
+
                     let mut loc = Vec::with_capacity(100);
                     match geoloc {
                         GeoJson::FeatureCollection(ref ctn) => {
@@ -380,13 +380,13 @@ fn main() {
                         .iter()
                         .map(|a| get_accountid_from_str(&a.as_str().unwrap()))
                         .collect();
-            
+
                     let cid = blake2_256(&(loc.clone(), bootstrappers.clone()).encode());
                     let name = meta["currency_meta"]["name"].as_str().unwrap();
                     info!("bootstrappers: {:?}", bootstrappers);
                     info!("name: {}", name);
                     info!("Currency registered by {}", signer.public().to_ss58check());
-                    let api = get_chain_api(matches);            
+                    let api = get_chain_api(matches);
                     let _api = api.clone().set_signer(sr25519_core::Pair::from(signer));
                     let xt: UncheckedExtrinsicV4<_> = compose_extrinsic!(
                         _api.clone(),
@@ -420,7 +420,7 @@ fn main() {
                 .runner(|_args: &str, matches: &ArgMatches<'_>| {
                     let api = get_chain_api(matches);
                     let phase = get_current_phase(&api);
-                    println!("{:?}", phase);                    
+                    println!("{:?}", phase);
                     Ok(())
                 }),
         )
@@ -433,14 +433,14 @@ fn main() {
 
                     let xt: UncheckedExtrinsicV4<_> =
                         compose_extrinsic!(api.clone(), "EncointerScheduler", "next_phase");
-            
+
                     // send and watch extrinsic until finalized
-                    let tx_hash = api.send_extrinsic(xt.hex_encode(), XtStatus::InBlock).unwrap();
+                    let tx_hash = api.send_extrinsic(xt.hex_encode(), XtStatus::Finalized).unwrap();
                     let phase = get_current_phase(&api);
                     println!(
                         "Transaction got finalized. Phase is now: {:?}. tx hash: {:?}",
                         phase, tx_hash
-                    );              
+                    );
                     Ok(())
                 }),
         )
@@ -490,7 +490,7 @@ fn perform_trusted_operation(
 fn get_state(matches: &ArgMatches<'_>, getter: TrustedGetterSigned) -> Option<Vec<u8>> {
     let worker_api = get_worker_api(matches);
     let (_mrenclave, shard) = get_identifiers(matches);
-    debug!("calling workerapi to get state value");
+    debug!("calling workerapi to get state value, {:?}", getter.getter);
     let ret = worker_api
         .get_stf_state(getter, &shard)
         .expect("getting value failed");
@@ -605,7 +605,7 @@ fn listen(matches: &ArgMatches<'_>) {
         match _events {
             Ok(evts) => {
                 for evr in &evts {
-                    debug!("decoded: phase {:?} event {:?}", evr.phase, evr.event);
+                    println!("decoded: phase {:?} event {:?}", evr.phase, evr.event);
                     match &evr.event {
                         /*                            Event::balances(be) => {
                             println!(">>>>>>>>>> balances event: {:?}", be);
@@ -646,7 +646,7 @@ fn listen(matches: &ArgMatches<'_>) {
                                 },
                                 my_node_runtime::substratee_registry::RawEvent::UnshieldedFunds(public_account) => {
                                     println!("UnshieldFunds for {:?}", public_account);
-                                },                                
+                                },
                             }
                         }
                         _ => debug!("ignoring unsupported module event: {:?}", evr.event),

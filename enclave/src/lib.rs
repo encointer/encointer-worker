@@ -408,7 +408,6 @@ pub fn update_states(header: Header) -> SgxResult<()> {
 
                     let mut state = state::load(&s)?;
                     Stf::update_storage(&mut state, &per_shard_update_map);
-                    warn!("in betweeen storage updates");
                     Stf::update_storage(&mut state, &update_map);
                     state::write(state, &s)?;
                 }

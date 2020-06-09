@@ -84,7 +84,9 @@ impl Stf {
                 });
 
             if next_phase.is_some() && next_phase != curr_phase {
-                if let Ok(next_phase) = CeremonyPhaseType::decode(&mut &next_phase.unwrap()[..]) {
+                if let Ok(next_phase) = CeremonyPhaseType::decode(&mut &next_phase.unwrap()[..])
+                {
+                    info!("Updated phase. Phase is now: {:?}", next_phase);
                     encointer_ceremonies::Module::<sgx_runtime::Runtime>::on_ceremony_phase_change(next_phase);
                 }
             }
@@ -144,6 +146,9 @@ impl Stf {
             }
             TrustedGetter::get_meetup_index_time_and_location(who, cid) => {
                 let c_index = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
+                warn!("Current Ceremony Index: {:?}", c_index);
+                let meetup_count = encointer_ceremonies::Module::<sgx_runtime::Runtime>::meetup_count((cid, c_index));
+                warn!("Meetup Count: {:?}", meetup_count);
                 let meetup_index = encointer_ceremonies::Module::<sgx_runtime::Runtime>::meetup_index((cid, c_index), AccountId32::from(who));
                 let location = encointer_ceremonies::Module::<sgx_runtime::Runtime>::get_meetup_location(&cid, meetup_index);
                 let time =  encointer_ceremonies::Module::<sgx_runtime::Runtime>::get_meetup_time(&cid, meetup_index);

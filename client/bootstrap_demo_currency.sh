@@ -60,35 +60,34 @@ account1=//AliceIncognito
 account2=//BobIncognito
 account3=//CharlieIncognito
 
-$CLIENT trusted ceremony-registration $account1 --mrenclave $MRENCLAVE --shard $SHARD $WORKERPORT 
+$CLIENT trusted get-registration $account1 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
 # should be zero
 
-$CLIENT trusted register-participant $account1 --mrenclave $MRENCLAVE --shard $SHARD $WORKERPORT
-$CLIENT trusted register-participant $account2 --mrenclave $MRENCLAVE --shard $SHARD $WORKERPORT
-$CLIENT trusted register-participant $account3 --mrenclave $MRENCLAVE --shard $SHARD $WORKERPORT
+$CLIENT trusted register-participant $account1 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
+$CLIENT trusted register-participant $account2 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
+$CLIENT trusted register-participant $account3 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
 
-$CLIENT trusted ceremony-registration $account1 --mrenclave $MRENCLAVE --shard $SHARD $WORKERPORT 
-# should be 1
+echo "Registered Participants"
 
-$CLIENT --cid $cid register-participant $account1
-$CLIENT --cid $cid register-participant $account2
-$CLIENT --cid $cid register-participant $account3
-
-# list registry
-$CLIENT --cid $cid list-participant-registry
+# should be 1,2 and 3
+$CLIENT trusted get-registration $account1 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
+$CLIENT trusted get-registration $account2 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
+$CLIENT trusted get-registration $account3 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
 
 $CLIENT next-phase
 # should now be ASSIGNING
 
-$CLIENT --cid $cid list-meetup-registry
+#$CLIENT --cid $cid list-meetup-registry
 
 $CLIENT next-phase
 # should now be ATTESTING
 
 echo "*** start meetup"
-claim1=$($CLIENT --cid $cid new-claim $account1 3)
-claim2=$($CLIENT --cid $cid new-claim $account2 3)
-claim3=$($CLIENT --cid $cid new-claim $account3 3)
+claim1=$($CLIENT trusted new-claim $account1 3 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT)
+claim2=$($CLIENT trusted new-claim $account2 3 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT)
+claim3=$($CLIENT trusted new-claim $account3 3 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT)
+
+echo "Claim1 = ${claim1}"
 
 echo "*** sign each others claims"
 witness1_2=$($CLIENT sign-claim $account1 $claim2)
@@ -101,9 +100,9 @@ witness3_1=$($CLIENT sign-claim $account3 $claim1)
 witness3_2=$($CLIENT sign-claim $account3 $claim2)
 
 echo "*** send witnesses to chain"
-$CLIENT register-attestations $account1 $witness2_1 $witness3_1
-$CLIENT register-attestations $account2 $witness1_2 $witness3_2
-$CLIENT register-attestations $account3 $witness1_3 $witness2_3
+$CLIENT trusted register-attestations $account1 $witness2_1 $witness3_1
+$CLIENT trusted register-attestations $account2 $witness1_2 $witness3_2
+$CLIENT trusted register-attestations $account3 $witness1_3 $witness2_3
 
 $CLIENT --cid $cid list-attestations-registry
 
@@ -111,5 +110,6 @@ $CLIENT next-phase
 # should now be REGISTERING
 
 echo "account balances for new currency with cid $cid"
-$CLIENT --cid $cid get-balance //Alice
-$CLIENT --cid $cid get-balance //Bob
+$CLIENT trusted balance $account1 ${WORKERPORT} --mrenclave $MRENCLAVE --shard $cid
+$CLIENT trusted balance $account2 ${WORKERPORT} --mrenclave $MRENCLAVE --shard $cid
+$CLIENT trusted balance $account3 ${WORKERPORT} --mrenclave $MRENCLAVE --shard $cid

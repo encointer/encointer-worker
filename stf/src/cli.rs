@@ -27,6 +27,12 @@ use sp_core::{crypto::Ss58Codec, sr25519 as sr25519_core, Pair};
 use sp_runtime::traits::IdentifyAccount;
 use std::path::PathBuf;
 use encointer_balances::BalanceType;
+use encointer_currencies::Location;
+use encointer_ceremonies::{MeetupIndexType, ClaimOfAttendance, ParticipantIndexType};
+use hex;
+use substrate_api_client::Api;
+
+type Moment = u64;
 
 const KEYSTORE_PATH: &str = "my_trusted_keystore";
 
@@ -228,8 +234,8 @@ pub fn cmd<'a>(
                 }),
         )
         .add_cmd(
-            Command::new("ceremony-registration")
-                .description("query state if registration for this ceremony")
+            Command::new("get-registration")
+                .description("get participant registration index for next encointer ceremony")
                 .options(|app| {
                     app.arg(
                         Arg::with_name("accountid")
@@ -241,13 +247,106 @@ pub fn cmd<'a>(
                 })
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
                     let arg_who = matches.value_of("accountid").unwrap();
-                    println!("arg_who = {:?}", arg_who);
                     let who = get_pair_from_str(matches, arg_who);
                     let (mrenclave, shard) = get_identifiers(matches);
-                    let tgetter =
-                        TrustedGetter::get_registration(sr25519_core::Public::from(who.public()), shard);
-                    let tsgetter = tgetter.sign(&sr25519_core::Pair::from(who));
-                    perform_operation(matches, &TrustedOperationSigned::get(tsgetter));
+                    let tgetter = TrustedGetter::get_registration(
+                        sr25519_core::Public::from(who.public()),
+                        shard, // for encointer we assume that every currency has its own shard. so shard == cid
+                    );
+                    let tsgetter =
+                        tgetter.sign(&sr25519_core::Pair::from(who));
+                    println!(
+                        "send TrustedGetter::GetRegistration for {}",
+                        tsgetter.getter.account(),
+                    );
+
+                    let part = perform_operation(matches, &TrustedOperationSigned::get(tsgetter)).unwrap();
+                    let participant: ParticipantIndexType = Decode::decode(&mut part.as_slice()).unwrap();
+                    println!("Participant index: {:?}", participant);
+                    Ok(())
+                }),
+        )
+        .add_cmd(
+            Command::new("register-attestations")
+                .description("register encointer ceremony attestations")
+                .options(|app| {
+                    app.arg(
+                        Arg::with_name("accountid")
+                            .takes_value(true)
+                            .required(true)
+                            .value_name("SS58")
+                            .help("AccountId in ss58check format"),
+                    )
+                        .arg(
+                            Arg::with_name("amount")
+                                .takes_value(true)
+                                .required(true)
+                                .value_name("U128")
+                                .help("amount to be transferred"),
+                        )
+                })
+                .runner(move |_args: &str, matches: &ArgMatches<'_>| {
+                    let arg_who = matches.value_of("accountid").unwrap();
+                    println!("arg_who = {:?}", arg_who);
+                    // let who = get_pair_from_str(matches, arg_who);
+                    // let (mrenclave, shard) = get_identifiers(matches);
+                    // let tgetter =
+                    //     TrustedGetter::(sr25519_core::Public::from(who.public()), shard);
+                    // let tsgetter = tgetter.sign(&sr25519_core::Pair::from(who));
+                    // perform_operation(matches, &TrustedOperationSigned::get(tsgetter));
+                    Ok(())
+                }),
+        )
+        .add_cmd(
+            Command::new("new-claim")
+                .description("read current ceremony phase from chain")
+                .options(|app| {
+                    app.arg(
+                        Arg::with_name("accountid")
+                            .takes_value(true)
+                            .required(true)
+                            .value_name("SS58")
+                            .help("AccountId in ss58check format"),
+                    )
+                        .arg(
+                            Arg::with_name("n-participants")
+                                .takes_value(true)
+                                .required(true)
+                        )
+                })
+                .runner(move |_args: &str, matches: &ArgMatches<'_>| {
+                    let arg_who = matches.value_of("accountid").unwrap();
+                    // println!("arg_who = {:?}", arg_who);
+                    let who = get_pair_from_str(matches, arg_who);
+
+                    let n_participants = matches
+                        .value_of("n-participants")
+                        .unwrap()
+                        .parse::<u32>()
+                        .unwrap();
+
+                    let (_mrenclave, shard) = get_identifiers(matches);
+
+                    let tgetter = TrustedGetter::get_meetup_index_time_and_location(who.public().into(), shard);
+                    let tsgetter = tgetter.sign(&sr25519_core::Pair::from(who.clone()));
+
+                    let res = perform_operation(matches, &TrustedOperationSigned::get(tsgetter)).unwrap();
+                    let (mindex, mtime, mlocation): (MeetupIndexType, Moment, Location) = Decode::decode(&mut res.as_slice()).unwrap();
+                    let api = get_chain_api(matches);
+                    let cindex = api.get_storage_value("EncointerScheduler", "CurrentCeremonyIndex", None)
+                        .unwrap();
+
+                    let claim = ClaimOfAttendance::<AccountId, Moment> {
+                        claimant_public: who.public().into(),
+                        currency_identifier: shard,
+                        ceremony_index: cindex,
+                        // ceremony_index: Default::default(),
+                        meetup_index: mindex,
+                        location: mlocation,
+                        timestamp: mtime,
+                        number_of_participants_confirmed: n_participants,
+                    };
+                    println!("{}", hex::encode(claim.encode()));
                     Ok(())
                 }),
         )
@@ -315,6 +414,16 @@ fn get_pair_from_str(matches: &ArgMatches<'_>, account: &str) -> sr25519::AppPai
             _pair
         }
     }
+}
+
+fn get_chain_api(matches: &ArgMatches<'_>) -> Api<sr25519::Pair> {
+    let url = format!(
+        "{}:{}",
+        matches.value_of("node-url").unwrap(),
+        matches.value_of("node-port").unwrap()
+    );
+    info!("connecting to {}", url);
+    Api::<sr25519::Pair>::new(url)
 }
 
 /*
