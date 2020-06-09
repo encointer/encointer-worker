@@ -9,7 +9,7 @@ use metadata::StorageHasher;
 use sgx_runtime::{Balance, Runtime};
 use sp_core::crypto::{AccountId32, Ss58Codec};
 use sp_io::SgxExternalitiesTrait;
-use sp_runtime::traits::Dispatchable;
+use sp_runtime::traits::{Dispatchable, IdentifyAccount};
 use encointer_scheduler::{CeremonyIndexType, CeremonyPhaseType, OnCeremonyPhaseChange};
 use encointer_balances::BalanceType;
 use encointer_currencies::CurrencyIdentifier;
@@ -142,7 +142,9 @@ impl Stf {
                 Some(get_encointer_balance(&who, &cid).encode())
             },
             TrustedGetter::get_registration(who, cid) => {
-                Some(get_ceremony_registration(&who, &cid).encode())
+                let c_index = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
+                let part: ParticipantIndexType = encointer_ceremonies::Module::<sgx_runtime::Runtime>::participant_index((cid, c_index), AccountId32::from(who));
+                Some(part.encode())
             }
             TrustedGetter::get_meetup_index_time_and_location(who, cid) => {
                 let c_index = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
@@ -264,34 +266,6 @@ fn get_account_info(who: &AccountId) -> Option<AccountInfo> {
         }
     } else {
         None
-    }
-}
-
-fn get_ceremony_registration(who: &AccountId, cid: &CurrencyIdentifier) -> ParticipantIndexType {
-    let cindex = match sp_io::storage::get(&storage_value_key(
-        "EncointerScheduler",
-        "CurrentCeremonyIndex")) {
-            Some(val) => if let Ok(v) = CeremonyIndexType::decode(&mut val.as_slice()) { v } else { 0 },
-            None => 0
-    };
-    info!("cindex = {}", cindex);
-    if let Some(res) = sp_io::storage::get(&storage_double_map_key(
-        "EncointerCeremonies",
-        "ParticipantIndex",
-        &(cid,cindex), 
-        &StorageHasher::Blake2_128Concat,
-        who,
-        &StorageHasher::Blake2_128Concat,
-    )) {
-        if let Ok(pindex) = ParticipantIndexType::decode(&mut res.as_slice()) {
-            pindex
-        } else {
-            debug!("can't decode ParticipantIndexType for {:x?}", res);
-            0
-        }
-    } else {
-        debug!("no registration for caller");
-        0
     }
 }
 
