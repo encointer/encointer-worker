@@ -106,11 +106,15 @@ witness3_1=$($CLIENT sign-claim $account3 $claim1)
 witness3_2=$($CLIENT sign-claim $account3 $claim2)
 
 echo "*** send witnesses to chain"
-$CLIENT trusted register-attestations $account1 $witness2_1 $witness3_1
-$CLIENT trusted register-attestations $account2 $witness1_2 $witness3_2
-$CLIENT trusted register-attestations $account3 $witness1_3 $witness2_3
+$CLIENT trusted register-attestations $account1 $witness2_1 $witness3_1 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
+$CLIENT trusted register-attestations $account2 $witness1_2 $witness3_2 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
+$CLIENT trusted register-attestations $account3 $witness1_3 $witness2_3 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
 
-$CLIENT --cid $cid list-attestations-registry
+
+$CLIENT trusted get-attestations $account1 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
+$CLIENT trusted get-attestations $account2 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
+$CLIENT trusted get-attestations $account3 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
+
 
 $CLIENT next-phase
 # should now be REGISTERING

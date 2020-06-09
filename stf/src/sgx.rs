@@ -157,7 +157,9 @@ impl Stf {
             TrustedGetter::get_attestations(who, cid) => {
                 let c_index = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
                 let attestation_index = encointer_ceremonies::Module::<sgx_runtime::Runtime>::attestation_index((cid, c_index), AccountId32::from(who));
-                Some(attestation_index.encode())
+                let attestations = encointer_ceremonies::Module::<sgx_runtime::Runtime>::attestation_registry((cid, c_index), attestation_index);
+
+                Some(attestations.encode())
             }
         })
     }

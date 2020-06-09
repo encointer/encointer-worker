@@ -15,7 +15,7 @@
 
 */
 
-use crate::{AccountId, ShardIdentifier, TrustedCall, TrustedGetter, TrustedOperationSigned};
+use crate::{AccountId, ShardIdentifier, TrustedCall, TrustedGetter, TrustedOperationSigned, Attestation};
 use base58::{FromBase58, ToBase58};
 use clap::{Arg, ArgMatches};
 use clap_nested::{Command, Commander, MultiCommand};
@@ -28,9 +28,10 @@ use sp_runtime::traits::IdentifyAccount;
 use std::path::PathBuf;
 use encointer_balances::BalanceType;
 use encointer_currencies::Location;
-use encointer_ceremonies::{MeetupIndexType, ClaimOfAttendance, ParticipantIndexType};
+use encointer_ceremonies::{MeetupIndexType, ClaimOfAttendance, ParticipantIndexType, AttestationIndexType};
 use hex;
 use substrate_api_client::Api;
+use sp_runtime::{MultiSignature, AccountId32};
 
 type Moment = u64;
 
@@ -226,7 +227,7 @@ pub fn cmd<'a>(
                     let tscall =
                         tcall.sign(&sr25519_core::Pair::from(who), nonce, &mrenclave, &shard);
                     println!(
-                        "send trusted call register_participant for {}",
+                        "send TrustedCall::register_participant for {}",
                         tscall.call.account(),
                     );
                     perform_operation(matches, &TrustedOperationSigned::call(tscall));
@@ -256,7 +257,7 @@ pub fn cmd<'a>(
                     let tsgetter =
                         tgetter.sign(&sr25519_core::Pair::from(who));
                     println!(
-                        "send TrustedGetter::GetRegistration for {}",
+                        "send TrustedGetter::get_registration for {}",
                         tsgetter.getter.account(),
                     );
 
@@ -278,22 +279,69 @@ pub fn cmd<'a>(
                             .help("AccountId in ss58check format"),
                     )
                         .arg(
-                            Arg::with_name("amount")
+                            Arg::with_name("attestations")
                                 .takes_value(true)
                                 .required(true)
-                                .value_name("U128")
-                                .help("amount to be transferred"),
+                                .multiple(true)
+                                .min_values(2)
                         )
                 })
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
                     let arg_who = matches.value_of("accountid").unwrap();
-                    println!("arg_who = {:?}", arg_who);
-                    // let who = get_pair_from_str(matches, arg_who);
-                    // let (mrenclave, shard) = get_identifiers(matches);
-                    // let tgetter =
-                    //     TrustedGetter::(sr25519_core::Public::from(who.public()), shard);
-                    // let tsgetter = tgetter.sign(&sr25519_core::Pair::from(who));
-                    // perform_operation(matches, &TrustedOperationSigned::get(tsgetter));
+                    let who = get_pair_from_str(matches, arg_who);
+                    let (mrenclave, shard) = get_identifiers(matches);
+
+                    let attestation_args: Vec<_> = matches.values_of("attestations").unwrap().collect();
+                    let mut attestations: Vec<Attestation<MultiSignature, AccountId32, Moment>> = vec![];
+                    for arg in attestation_args.iter() {
+                        let w = Attestation::decode(&mut &hex::decode(arg).unwrap()[..]).unwrap();
+                        attestations.push(w);
+                    }
+
+                    let tcall = TrustedCall::ceremonies_register_attestations(
+                        sr25519_core::Public::from(who.public()),
+                        attestations
+                    );
+                    let nonce = 0; // FIXME: hard coded for now
+                    let tscall =
+                        tcall.sign(&sr25519_core::Pair::from(who), nonce, &mrenclave, &shard);
+                    println!(
+                        "send TrustedCall::register_attestations for {}",
+                        tscall.call.account(),
+                    );
+                    perform_operation(matches, &TrustedOperationSigned::call(tscall));
+                    Ok(())
+                }),
+        )
+        .add_cmd(
+            Command::new("get-attestations")
+                .description("get attestations registration index for this encointer ceremony")
+                .options(|app| {
+                    app.arg(
+                        Arg::with_name("accountid")
+                            .takes_value(true)
+                            .required(true)
+                            .value_name("SS58")
+                            .help("AccountId in ss58check format"),
+                    )
+                })
+                .runner(move |_args: &str, matches: &ArgMatches<'_>| {
+                    let arg_who = matches.value_of("accountid").unwrap();
+                    let who = get_pair_from_str(matches, arg_who);
+                    let (mrenclave, shard) = get_identifiers(matches);
+                    let tgetter = TrustedGetter::get_attestations(
+                        sr25519_core::Public::from(who.public()),
+                        shard, // for encointer we assume that every currency has its own shard. so shard == cid
+                    );
+                    let tsgetter =
+                        tgetter.sign(&sr25519_core::Pair::from(who));
+                    println!(
+                        "send TrustedGetter::get_attestations for {}",
+                        tsgetter.getter.account(),
+                    );
+
+                    let attestations = perform_operation(matches, &TrustedOperationSigned::get(tsgetter)).unwrap();
+                    println!("Attestations: {:?}", hex::encode(attestations));
                     Ok(())
                 }),
         )
