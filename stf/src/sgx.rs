@@ -6,11 +6,11 @@ use codec::{Decode, Encode};
 use derive_more::Display;
 use log_sgx::*;
 use metadata::StorageHasher;
-use sgx_runtime::{Balance, Runtime};
-use sp_core::crypto::{AccountId32, Ss58Codec};
+use sgx_runtime::Runtime;
+use sp_core::crypto::AccountId32;
 use sp_io::SgxExternalitiesTrait;
-use sp_runtime::traits::{Dispatchable, IdentifyAccount};
-use encointer_scheduler::{CeremonyIndexType, CeremonyPhaseType, OnCeremonyPhaseChange};
+use sp_runtime::traits::Dispatchable;
+use encointer_scheduler::{CeremonyPhaseType, OnCeremonyPhaseChange};
 use encointer_balances::BalanceType;
 use encointer_currencies::{CurrencyIdentifier, Location};
 use encointer_ceremonies::{ParticipantIndexType, MeetupIndexType};
@@ -18,9 +18,7 @@ use sgx_runtime::Moment;
 
 use crate::{
     AccountId, State, Stf, TrustedCall, TrustedCallSigned, TrustedGetter, TrustedGetterSigned,
-    SUBSRATEE_REGISTRY_MODULE, UNSHIELD,
 };
-use sp_core::blake2_256;
 
 /// Simple blob that holds a call in encoded format
 #[derive(Clone, Debug)]
@@ -32,9 +30,6 @@ impl Encode for OpaqueCall {
     }
 }
 
-type Index = u32;
-type AccountData = ();//balances::AccountData<Balance>;
-type AccountInfo = system::AccountInfo<Index, AccountData>;
 const ALICE_ENCODED: [u8; 32] = [
     212, 53, 147, 199, 21, 253, 211, 28, 97, 20, 26, 189, 4, 169, 159, 214, 130, 44, 133, 88, 133,
     76, 205, 227, 154, 86, 132, 231, 165, 109, 162, 125,
@@ -96,7 +91,7 @@ impl Stf {
     pub fn execute(
         ext: &mut State,
         call: TrustedCallSigned,
-        calls: &mut Vec<OpaqueCall>,
+        _calls: &mut Vec<OpaqueCall>,
     ) -> Result<(), StfError> {
         ext.execute_with(|| match call.call {
             TrustedCall::balance_transfer(from, to, cid, value) => {
@@ -164,14 +159,6 @@ impl Stf {
         })
     }
 
-    fn ensure_root(account: AccountId) -> Result<(), StfError> {
-        if sp_io::storage::get(&storage_value_key("Sudo", "Key")).unwrap() == account.encode() {
-            Ok(())
-        } else {
-            Err(StfError::MissingPrivileges(account))
-        }
-    }
-
     fn ensure_ceremony_master(account: AccountId) -> Result<(), StfError> {
         if sp_io::storage::get(&storage_value_key("EncointerScheduler", "CeremonyMaster")).unwrap() == account.encode() {
             Ok(())
@@ -206,14 +193,6 @@ impl Stf {
 
     pub fn get_storage_hashes_to_update_for_getter(getter: &TrustedGetterSigned) -> Vec<Vec<u8>> {
         info!("No specific storage updates needed for getter. Returning those for on block: {:?}", getter.getter);
-        // in case that a getter has been called on a previously unitialized shard
-        match getter.getter {
-            TrustedGetter::balance(who, cid) => info!("Nothing to be fetched for {:?}", getter.getter),
-            TrustedGetter::get_attestations(who, cid) => info!(""),
-            TrustedGetter::get_meetup_index_time_and_location(who, cid) => info!(""),
-            TrustedGetter::get_registration(who, cid) => info!("")
-        };
-
         Self::storage_hashes_to_update_on_block()
     }
 
@@ -250,23 +229,6 @@ pub fn nonce_key_hash(account: &AccountId) -> Vec<u8> {
         account,
         &StorageHasher::Blake2_128Concat,
     )
-}
-
-fn get_account_info(who: &AccountId) -> Option<AccountInfo> {
-    if let Some(infovec) = sp_io::storage::get(&storage_map_key(
-        "System",
-        "Account",
-        who,
-        &StorageHasher::Blake2_128Concat,
-    )) {
-        if let Ok(info) = AccountInfo::decode(&mut infovec.as_slice()) {
-            Some(info)
-        } else {
-            None
-        }
-    } else {
-        None
-    }
 }
 
 fn get_encointer_balance(who: &AccountId, cid: &CurrencyIdentifier) -> BalanceType {

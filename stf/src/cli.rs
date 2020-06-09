@@ -28,7 +28,7 @@ use sp_runtime::traits::IdentifyAccount;
 use std::path::PathBuf;
 use encointer_balances::BalanceType;
 use encointer_currencies::Location;
-use encointer_ceremonies::{MeetupIndexType, ClaimOfAttendance, ParticipantIndexType, AttestationIndexType};
+use encointer_ceremonies::{MeetupIndexType, ClaimOfAttendance, ParticipantIndexType};
 use hex;
 use substrate_api_client::Api;
 use sp_runtime::{MultiSignature, AccountId32};
@@ -183,7 +183,7 @@ pub fn cmd<'a>(
                     let arg_who = matches.value_of("accountid").unwrap();
                     println!("arg_who = {:?}", arg_who);
                     let who = get_pair_from_str(matches, arg_who);
-                    let (mrenclave, shard) = get_identifiers(matches);
+                    let (_mrenclave, shard) = get_identifiers(matches);
                     let tgetter =
                         TrustedGetter::balance(sr25519_core::Public::from(who.public()), shard);
                     let tsgetter = tgetter.sign(&sr25519_core::Pair::from(who));
@@ -249,7 +249,7 @@ pub fn cmd<'a>(
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
                     let arg_who = matches.value_of("accountid").unwrap();
                     let who = get_pair_from_str(matches, arg_who);
-                    let (mrenclave, shard) = get_identifiers(matches);
+                    let (_mrenclave, shard) = get_identifiers(matches);
                     let tgetter = TrustedGetter::get_registration(
                         sr25519_core::Public::from(who.public()),
                         shard, // for encointer we assume that every currency has its own shard. so shard == cid
@@ -328,7 +328,7 @@ pub fn cmd<'a>(
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
                     let arg_who = matches.value_of("accountid").unwrap();
                     let who = get_pair_from_str(matches, arg_who);
-                    let (mrenclave, shard) = get_identifiers(matches);
+                    let (_mrenclave, shard) = get_identifiers(matches);
                     let tgetter = TrustedGetter::get_attestations(
                         sr25519_core::Public::from(who.public()),
                         shard, // for encointer we assume that every currency has its own shard. so shard == cid

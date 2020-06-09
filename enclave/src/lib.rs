@@ -36,9 +36,9 @@ use sgx_tunittest::*;
 use sgx_types::{sgx_epid_group_id_t, sgx_status_t, sgx_target_info_t, size_t, SgxResult};
 
 use substrate_api_client::{compose_extrinsic_offline, utils::storage_key};
-use substratee_node_primitives::{CallWorkerFn, ShieldFundsFn};
+use substratee_node_primitives::CallWorkerFn;
 use substratee_stf::{
-    AccountId, ShardIdentifier, Stf, TrustedCall, TrustedCallSigned, TrustedGetterSigned,
+    ShardIdentifier, Stf, TrustedCallSigned, TrustedGetterSigned,
 };
 
 use codec::{Decode, Encode};
@@ -53,7 +53,7 @@ use std::vec::Vec;
 use std::collections::HashMap;
 use utils::write_slice_and_whitespace_pad;
 
-use crate::constants::{CALL_WORKER, SHIELD_FUNDS};
+use crate::constants::CALL_WORKER;
 use crate::utils::UnwrapOrSgxErrorUnexpected;
 use chain_relay::{
     storage_proof::{StorageProof, StorageProofChecker},
