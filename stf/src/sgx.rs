@@ -134,7 +134,8 @@ impl Stf {
     pub fn get_state(ext: &mut State, getter: TrustedGetter) -> Option<Vec<u8>> {
         ext.execute_with(|| match getter {
             TrustedGetter::balance(who, cid) => {
-                Some(get_encointer_balance(&who, &cid).encode())
+                let balance: BalanceType = encointer_balances::Module::<sgx_runtime::Runtime>::balance(cid, &who.into());
+                Some(balance.encode())
             },
             TrustedGetter::registration(who, cid) => {
                 let c_index = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
@@ -153,7 +154,6 @@ impl Stf {
                 let c_index = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
                 let attestation_index = encointer_ceremonies::Module::<sgx_runtime::Runtime>::attestation_index((cid, c_index), AccountId32::from(who));
                 let attestations = encointer_ceremonies::Module::<sgx_runtime::Runtime>::attestation_registry((cid, c_index), attestation_index);
-
                 Some(attestations.encode())
             }
         })
@@ -229,25 +229,6 @@ pub fn nonce_key_hash(account: &AccountId) -> Vec<u8> {
         account,
         &StorageHasher::Blake2_128Concat,
     )
-}
-
-fn get_encointer_balance(who: &AccountId, cid: &CurrencyIdentifier) -> BalanceType {
-    if let Some(balvec) = sp_io::storage::get(&storage_double_map_key(
-        "EncointerBalances",
-        "Balance",
-        cid,
-        &StorageHasher::Blake2_128Concat,
-        who,
-        &StorageHasher::Blake2_128Concat,
-    )) {
-        if let Ok(bal) = BalanceType::decode(&mut balvec.as_slice()) {
-            bal
-        } else {
-            BalanceType::from_num(0)
-        }
-    } else {
-        BalanceType::from_num(0)
-    }
 }
 
 pub fn storage_value_key(module_prefix: &str, storage_prefix: &str) -> Vec<u8> {
