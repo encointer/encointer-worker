@@ -56,9 +56,9 @@ echo "  MRENCLAVE = ${MRENCLAVE}"
 # new account with
 # $CLIENT trusted new-account --mrenclave $MRENCLAVE --shard $SHARD
 
-account1=//AliceIncognito
-account2=//BobIncognito
-account3=//CharlieIncognito
+account1=//Alice
+account2=//Bob
+account3=//Charlie
 
 $CLIENT trusted get-registration $account1 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
 # should be zero
