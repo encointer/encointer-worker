@@ -92,8 +92,8 @@ claim2=$($CLIENT trusted new-claim $account2 3 --mrenclave $MRENCLAVE --shard $c
 claim3=$($CLIENT trusted new-claim $account3 3 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT)
 
 echo "Claim1 = ${claim1}"
-echo "Claim1 = ${claim2}"
-echo "Claim1 = ${claim3}"
+echo "Claim2 = ${claim2}"
+echo "Claim3 = ${claim3}"
 
 echo "*** sign each others claims"
 witness1_2=$($CLIENT sign-claim $account1 $claim2)
@@ -118,6 +118,10 @@ $CLIENT trusted get-attestations $account3 --mrenclave $MRENCLAVE --shard $cid $
 
 $CLIENT next-phase
 # should now be REGISTERING
+
+echo "* Waiting 5 seconds such that phase change happened in enclave"
+sleep 5
+echo ""
 
 echo "account balances for new currency with cid $cid"
 $CLIENT trusted balance $account1 ${WORKERPORT} --mrenclave $MRENCLAVE --shard $cid

@@ -189,14 +189,14 @@ pub fn cmd<'a>(
                     let tsgetter = tgetter.sign(&sr25519_core::Pair::from(who));
                     let res = perform_operation(matches, &TrustedOperationSigned::get(tsgetter));
                     let bal = if let Some(v) = res {
-                        if let Ok(vd) = <u128>::decode(&mut v.as_slice()) {
+                        if let Ok(vd) = <BalanceType>::decode(&mut v.as_slice()) {
                             vd
                         } else {
                             info!("could not decode value. maybe hasn't been set? {:x?}", v);
-                            0
+                            BalanceType::from_num(0)
                         }
                     } else {
-                        0
+                        BalanceType::from_num(0)
                     };
                     println!("{}", bal);
                     Ok(())
