@@ -331,7 +331,10 @@ pub fn cmd<'a>(
                     let tsgetter = tgetter.sign(&sr25519_core::Pair::from(who.clone()));
 
                     let res = perform_operation(matches, &TrustedOperationSigned::get(tsgetter)).unwrap();
-                    let (mindex, mtime, mlocation): (MeetupIndexType, Moment, Location) = Decode::decode(&mut res.as_slice()).unwrap();
+                    let (mindex, mlocation, mtime): (MeetupIndexType, Option<Location>, Option<Moment>) = Decode::decode(&mut res.as_slice()).unwrap();
+                    info!("got mindex: {:?}", mindex);
+                    info!("got time: {:?}", mtime);
+                    info!("got location: {:?}", mlocation);
                     let api = get_chain_api(matches);
                     let cindex = api.get_storage_value("EncointerScheduler", "CurrentCeremonyIndex", None)
                         .unwrap();
@@ -342,8 +345,8 @@ pub fn cmd<'a>(
                         ceremony_index: cindex,
                         // ceremony_index: Default::default(),
                         meetup_index: mindex,
-                        location: mlocation,
-                        timestamp: mtime,
+                        location: mlocation.unwrap(),
+                        timestamp: mtime.unwrap(),
                         number_of_participants_confirmed: n_participants,
                     };
                     println!("{}", hex::encode(claim.encode()));

@@ -82,12 +82,18 @@ $CLIENT next-phase
 $CLIENT next-phase
 # should now be ATTESTING
 
+echo "* Waiting 5 seconds such that phase change happened in enclave"
+sleep 5
+echo ""
+
 echo "*** start meetup"
 claim1=$($CLIENT trusted new-claim $account1 3 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT)
 claim2=$($CLIENT trusted new-claim $account2 3 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT)
 claim3=$($CLIENT trusted new-claim $account3 3 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT)
 
 echo "Claim1 = ${claim1}"
+echo "Claim1 = ${claim2}"
+echo "Claim1 = ${claim3}"
 
 echo "*** sign each others claims"
 witness1_2=$($CLIENT sign-claim $account1 $claim2)

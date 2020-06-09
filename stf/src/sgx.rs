@@ -12,7 +12,7 @@ use sp_io::SgxExternalitiesTrait;
 use sp_runtime::traits::{Dispatchable, IdentifyAccount};
 use encointer_scheduler::{CeremonyIndexType, CeremonyPhaseType, OnCeremonyPhaseChange};
 use encointer_balances::BalanceType;
-use encointer_currencies::CurrencyIdentifier;
+use encointer_currencies::{CurrencyIdentifier, Location};
 use encointer_ceremonies::{ParticipantIndexType, MeetupIndexType};
 use sgx_runtime::Moment;
 
@@ -148,13 +148,11 @@ impl Stf {
             }
             TrustedGetter::get_meetup_index_time_and_location(who, cid) => {
                 let c_index = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
-                warn!("Current Ceremony Index: {:?}", c_index);
-                let meetup_count = encointer_ceremonies::Module::<sgx_runtime::Runtime>::meetup_count((cid, c_index));
-                warn!("Meetup Count: {:?}", meetup_count);
-                let meetup_index = encointer_ceremonies::Module::<sgx_runtime::Runtime>::meetup_index((cid, c_index), AccountId32::from(who));
-                let location = encointer_ceremonies::Module::<sgx_runtime::Runtime>::get_meetup_location(&cid, meetup_index);
-                let time =  encointer_ceremonies::Module::<sgx_runtime::Runtime>::get_meetup_time(&cid, meetup_index);
-                Some((meetup_index, time, location).encode())
+                let meetup_index: MeetupIndexType = encointer_ceremonies::Module::<sgx_runtime::Runtime>::meetup_index((cid, c_index), AccountId32::from(who));
+                let time: Option<Moment> =  encointer_ceremonies::Module::<sgx_runtime::Runtime>::get_meetup_time(&cid, meetup_index);
+                let location: Option<Location> = encointer_ceremonies::Module::<sgx_runtime::Runtime>::get_meetup_location(&cid, meetup_index);
+                let enc = (meetup_index, location, time).encode();
+                Some(enc)
             }
             TrustedGetter::get_attestations(who, cid) => {
                 let c_index = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
