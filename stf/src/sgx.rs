@@ -16,9 +16,7 @@ use encointer_currencies::{CurrencyIdentifier, Location};
 use encointer_ceremonies::{ParticipantIndexType, MeetupIndexType};
 use sgx_runtime::Moment;
 
-use crate::{
-    AccountId, State, Stf, TrustedCall, TrustedCallSigned, TrustedGetter, TrustedGetterSigned,
-};
+use crate::{AccountId, State, Stf, TrustedCall, TrustedCallSigned, TrustedGetter, TrustedGetterSigned, ShardIdentifier};
 
 /// Simple blob that holds a call in encoded format
 #[derive(Clone, Debug)]
@@ -199,16 +197,27 @@ impl Stf {
     pub fn storage_hashes_to_update_on_block() -> Vec<Vec<u8>> {
         let mut key_hashes = Vec::new();
 
+        // get all shards that are currently registered
+        key_hashes.push(shards_key_hash());
+
         key_hashes.push(storage_value_key("EncointerScheduler", "CurrentPhase"));
         key_hashes.push(storage_value_key("EncointerScheduler", "CurrentCeremonyIndex"));
         key_hashes.push(storage_value_key("EncointerScheduler", "NextPhaseTimestamp"));
         key_hashes.push(storage_value_key("EncointerScheduler", "PhaseDurations"));
-        key_hashes.push(storage_value_key("EncointerCurrencies", "CurrencyIdentifiers"));
 
         key_hashes
     }
 }
 
+pub fn storage_hashes_to_update_per_shard(shard: &ShardIdentifier) -> Vec<Vec<u8>> {
+    let mut key_hashes = Vec::new();
+
+    // for encointer CID == ShardIdentifier
+    key_hashes.push(bootstrapper_key_hash(shard));
+    key_hashes.push(location_key_hash(shard));
+
+    key_hashes
+}
 
 pub fn bootstrapper_key_hash(cid: &CurrencyIdentifier) -> Vec<u8> {
     storage_map_key("EncointerCurrencies", "Bootstrappers", cid, &StorageHasher::Blake2_128Concat)
@@ -217,7 +226,7 @@ pub fn location_key_hash(cid: &CurrencyIdentifier) -> Vec<u8> {
     storage_map_key("EncointerCurrencies", "Locations", cid, &StorageHasher::Blake2_128Concat)
 }
 
-pub fn currency_identifier_key_hash() -> Vec<u8> {
+pub fn shards_key_hash() -> Vec<u8> {
     storage_value_key("EncointerCurrencies", "CurrencyIdentifiers")
 }
 

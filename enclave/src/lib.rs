@@ -62,7 +62,7 @@ use chain_relay::{
 use sp_runtime::OpaqueExtrinsic;
 use sp_runtime::{generic::SignedBlock, traits::Header as HeaderT};
 use substrate_api_client::extrinsic::xt_primitives::UncheckedExtrinsicV4;
-use substratee_stf::sgx::{OpaqueCall, currency_identifier_key_hash, location_key_hash, bootstrapper_key_hash};
+use substratee_stf::sgx::{OpaqueCall, shards_key_hash, storage_hashes_to_update_per_shard};
 
 mod aes;
 mod attestation;
@@ -388,7 +388,7 @@ pub fn update_states(header: Header) -> SgxResult<()> {
     let responses: Vec<WorkerResponse<Vec<u8>>> = worker_request(requests)?;
     let update_map = verify_worker_responses(responses, header.clone())?;
     // look for new shards an initialize them
-    if let Some(maybe_shards) = update_map.get(&currency_identifier_key_hash()) {
+    if let Some(maybe_shards) = update_map.get(&shards_key_hash()) {
         match maybe_shards {
             Some(shards) => {
                 let shards: Vec<ShardIdentifier> = Decode::decode(&mut shards.as_slice()).sgx_error_with_log("error decoding shards")?;
@@ -398,7 +398,7 @@ pub fn update_states(header: Header) -> SgxResult<()> {
                         state::init_shard(&s)?;
                     }
                     // per shard (cid) requests
-                    let per_shard_request = vec![bootstrapper_key_hash(&s), location_key_hash(&s)]
+                    let per_shard_request = storage_hashes_to_update_per_shard(&s)
                         .into_iter()
                         .map(|key| WorkerRequest::ChainStorage(key, Some(header.hash())))
                         .collect();
