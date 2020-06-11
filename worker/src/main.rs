@@ -271,26 +271,28 @@ fn worker(w_ip: &str, w_port: &str, mu_ra_port: &str, shard: &ShardIdentifier) {
     println!("[<] Extrinsic got finalized. Hash: {:?}\n", tx_hash);
 
     // browse enclave registry
-    match get_first_worker_that_is_not_equal_to_self(&api, &tee_accountid) {
-        Some(w) => {
-            let _url = String::from_utf8_lossy(&w.url[..]).to_string();
-            let _w_api = WorkerApi::new(_url.clone());
-            let _url_split: Vec<_> = _url.split(':').collect();
-            let mura_url = format!("{}:{}", _url_split[0], _w_api.get_mu_ra_port().unwrap());
-
-            info!("Requesting key provisioning from worker at {}", mura_url);
-            enclave_request_key_provisioning(
-                eid,
-                sgx_quote_sign_type_t::SGX_UNLINKABLE_SIGNATURE,
-                &mura_url,
-            )
-            .unwrap();
-            debug!("key provisioning successfully performed");
-        }
-        None => {
-            info!("there are no other workers");
-        }
-    }
+    // Todo: Currently, we have not designed how to unregister workers. We assume currently that each worker is on its
+    // own.
+    // match get_first_worker_that_is_not_equal_to_self(&api, &tee_accountid) {
+    //     Some(w) => {
+    //         let _url = String::from_utf8_lossy(&w.url[..]).to_string();
+    //         let _w_api = WorkerApi::new(_url.clone());
+    //         let _url_split: Vec<_> = _url.split(':').collect();
+    //         let mura_url = format!("{}:{}", _url_split[0], _w_api.get_mu_ra_port().unwrap());
+    //
+    //         info!("Requesting key provisioning from worker at {}", mura_url);
+    //         enclave_request_key_provisioning(
+    //             eid,
+    //             sgx_quote_sign_type_t::SGX_UNLINKABLE_SIGNATURE,
+    //             &mura_url,
+    //         )
+    //         .unwrap();
+    //         debug!("key provisioning successfully performed");
+    //     }
+    //     None => {
+    //         info!("there are no other workers");
+    //     }
+    // }
 
     println!("*** [+] finished remote attestation\n");
 
