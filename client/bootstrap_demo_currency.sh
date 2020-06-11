@@ -20,6 +20,20 @@ NPORT=${1:-19943}
 WURL=${2:-wss://substratee03.scs.ch}
 WPORT=${2:-443}
 
+wait_for_phase() {
+  current_phase=$($CLIENT get-phase)
+
+  echo "waiting for phase: $1 ..."
+
+  while  [ "$current_phase" != "$1" ]; do
+    echo "current phase: $current_phase ... waiting for phase $1"
+    sleep 10
+    current_phase=$($CLIENT get-phase)
+  done
+
+  echo "current_phase is $1, progress script"
+}
+
 echo "Using node-port: ${NPORT}"
 echo "Using worker address: ${WURL}/${WPORT}"
 echo ""
@@ -35,21 +49,7 @@ echo $cid
 # list currenies
 $CLIENT list-currencies
 
-# bootstrap currency with well-known keys
-phase=$($CLIENT get-phase)
-echo "phase is $phase"
-if [ "$phase" == "REGISTERING" ]; then
-   echo "that's fine"
-elif [ "$phase" == "ASSIGNING" ]; then
-   echo "need to advance"
-   $CLIENT next-phase   
-   $CLIENT next-phase
-elif [ "$phase" == "ATTESTING" ]; then
-   echo "need to advance"
-   $CLIENT next-phase   
-fi
-phase=$($CLIENT get-phase)
-echo "phase is now: $phase"
+wait_for_phase REGISTERING
 
 read MRENCLAVE <<< $(${CLIENT} list-workers | awk '/  MRENCLAVE: / { print $2 }')
 echo "  MRENCLAVE = ${MRENCLAVE}"
@@ -75,11 +75,7 @@ $CLIENT trusted get-registration $account1 --mrenclave $MRENCLAVE --shard $cid $
 $CLIENT trusted get-registration $account2 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
 $CLIENT trusted get-registration $account3 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
 
-$CLIENT next-phase
-# should now be ASSIGNING
-
-$CLIENT next-phase
-# should now be ATTESTING
+wait_for_phase ATTESTING
 
 echo "* Waiting 5 seconds such that phase change happened in enclave"
 sleep 5
@@ -114,9 +110,7 @@ $CLIENT trusted get-attestations $account1 --mrenclave $MRENCLAVE --shard $cid $
 $CLIENT trusted get-attestations $account2 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
 $CLIENT trusted get-attestations $account3 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
 
-
-$CLIENT next-phase
-# should now be REGISTERING
+wait_for_phase REGISTERING
 
 echo "* Waiting 5 seconds such that phase change happened in enclave"
 sleep 5
