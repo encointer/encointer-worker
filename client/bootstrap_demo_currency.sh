@@ -13,18 +13,19 @@
 # then run this script
 
 # usage:
-#  demo_shielding_unshielding.sh <NODEPORT> <WORKERPORT>
+#  demo_shielding_unshielding.sh <NODEPORT> <WORKERADDR>
 
 # using default port if none given as first argument
-NPORT=${1:-9944}
-WPORT=${2:-2000}
+NPORT=${1:-19943}
+WURL=${2:-wss://substratee03.scs.ch}
+WPORT=${2:-443}
 
-echo "Using node-port ${NPORT}"
-echo "Using worker-port ${WPORT}"
+echo "Using node-port: ${NPORT}"
+echo "Using worker address: ${WURL}/${WPORT}"
 echo ""
 
 CLIENT="../target/release/encointer-client -p ${NPORT} "
-WORKERPORT="--worker-port ${WPORT}"
+WORKERADDR="--worker-url ${WURL} --worker-port ${WPORT}"
 SHARD="3LjCHdiNbNLKEtwGtBf6qHGZnfKFyjLu9v3uxVgDL35C"
 
 # register new currency
@@ -60,19 +61,19 @@ account1=//Alice
 account2=//Bob
 account3=//Charlie
 
-$CLIENT trusted get-registration $account1 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
+$CLIENT trusted get-registration $account1 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
 # should be zero
 
-$CLIENT trusted register-participant $account1 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
-$CLIENT trusted register-participant $account2 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
-$CLIENT trusted register-participant $account3 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
+$CLIENT trusted register-participant $account1 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
+$CLIENT trusted register-participant $account2 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
+$CLIENT trusted register-participant $account3 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
 
 echo "*** registered participants"
 
 # should be 1,2 and 3
-$CLIENT trusted get-registration $account1 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
-$CLIENT trusted get-registration $account2 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
-$CLIENT trusted get-registration $account3 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
+$CLIENT trusted get-registration $account1 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
+$CLIENT trusted get-registration $account2 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
+$CLIENT trusted get-registration $account3 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
 
 $CLIENT next-phase
 # should now be ASSIGNING
@@ -85,9 +86,9 @@ sleep 5
 echo ""
 
 echo "*** start meetup"
-claim1=$($CLIENT trusted new-claim $account1 3 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT)
-claim2=$($CLIENT trusted new-claim $account2 3 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT)
-claim3=$($CLIENT trusted new-claim $account3 3 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT)
+claim1=$($CLIENT trusted new-claim $account1 3 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR)
+claim2=$($CLIENT trusted new-claim $account2 3 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR)
+claim3=$($CLIENT trusted new-claim $account3 3 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR)
 
 echo "Claim1 = ${claim1}"
 echo "Claim2 = ${claim2}"
@@ -104,14 +105,14 @@ witness3_1=$($CLIENT sign-claim $account3 $claim1)
 witness3_2=$($CLIENT sign-claim $account3 $claim2)
 
 echo "*** send witnesses to chain"
-$CLIENT trusted register-attestations $account1 $witness2_1 $witness3_1 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
-$CLIENT trusted register-attestations $account2 $witness1_2 $witness3_2 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
-$CLIENT trusted register-attestations $account3 $witness1_3 $witness2_3 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
+$CLIENT trusted register-attestations $account1 $witness2_1 $witness3_1 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
+$CLIENT trusted register-attestations $account2 $witness1_2 $witness3_2 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
+$CLIENT trusted register-attestations $account3 $witness1_3 $witness2_3 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
 
 
-$CLIENT trusted get-attestations $account1 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
-$CLIENT trusted get-attestations $account2 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
-$CLIENT trusted get-attestations $account3 --mrenclave $MRENCLAVE --shard $cid $WORKERPORT
+$CLIENT trusted get-attestations $account1 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
+$CLIENT trusted get-attestations $account2 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
+$CLIENT trusted get-attestations $account3 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
 
 
 $CLIENT next-phase
@@ -122,6 +123,6 @@ sleep 5
 echo ""
 
 echo "account balances for new currency with cid $cid"
-$CLIENT trusted balance $account1 ${WORKERPORT} --mrenclave $MRENCLAVE --shard $cid
-$CLIENT trusted balance $account2 ${WORKERPORT} --mrenclave $MRENCLAVE --shard $cid
-$CLIENT trusted balance $account3 ${WORKERPORT} --mrenclave $MRENCLAVE --shard $cid
+$CLIENT trusted balance $account1 ${WORKERADDR} --mrenclave $MRENCLAVE --shard $cid
+$CLIENT trusted balance $account2 ${WORKERADDR} --mrenclave $MRENCLAVE --shard $cid
+$CLIENT trusted balance $account3 ${WORKERADDR} --mrenclave $MRENCLAVE --shard $cid
