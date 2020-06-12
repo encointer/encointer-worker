@@ -1,24 +1,17 @@
 #!/bin/bash
 
-# setup:
-# run all on localhost:
-#   encointer-node purge-chain --dev
-#   encointer-node --dev --ws-port 9979 -lruntime=debug
-#   rm chain_relay_db.bin
-#   encointer-worker init-shard 3LjCHdiNbNLKEtwGtBf6qHGZnfKFyjLu9v3uxVgDL35C
-#   encointer-worker shielding-key
-#   encointer-worker signing-key
-#   encointer-worker -p 9979 -w 2079 run 3LjCHdiNbNLKEtwGtBf6qHGZnfKFyjLu9v3uxVgDL35C
+# M1 Demo
 #
-# then run this script
+# bootstrap a bot currency on Encointer Cantillon Testnet
 
-# usage:
-#  demo_shielding_unshielding.sh <NODEPORT> <WORKERADDR>
+# Cantillon node endpoint
+NURL=wss://cantillon.encointer.org
+NPORT=443
+# Cantillon worker endpoint
+WURL=wss://substratee03.scs.ch
+WPORT=443
 
-# using default port if none given as first argument
-NPORT=${1:-19943}
-WURL=${2:-wss://substratee03.scs.ch}
-WPORT=${2:-443}
+CLIENT="./encointer-client -u $NURL -p $NPORT -U $WURL -P $WPORT"
 
 wait_for_phase() {
   current_phase=$($CLIENT get-phase)
@@ -34,16 +27,15 @@ wait_for_phase() {
   echo "current_phase is $1, progress script"
 }
 
-echo "Using node-port: ${NPORT}"
-echo "Using worker address: ${WURL}/${WPORT}"
+echo "Using node address: $NURL:$NPORT"
+echo "Using worker address: $WURL:$WPORT"
 echo ""
 
-CLIENT="../target/release/encointer-client -p ${NPORT} "
-WORKERADDR="--worker-url ${WURL} --worker-port ${WPORT}"
-SHARD="3LjCHdiNbNLKEtwGtBf6qHGZnfKFyjLu9v3uxVgDL35C"
 
-# register new currency
-cid=$($CLIENT new-currency test-locations-mediterranean.json //Alice)
+#WORKERADDR="--worker-url ${WURL} --worker-port ${WPORT}"
+
+# register new currency (with any funded on-chain account)
+cid=$($CLIENT new-currency test-locations-sea-of-crete.json //Alice)
 echo $cid
 
 # list currenies
@@ -51,29 +43,38 @@ $CLIENT list-currencies
 
 wait_for_phase REGISTERING
 
-read MRENCLAVE <<< $(${CLIENT} list-workers | awk '/  MRENCLAVE: / { print $2 }')
+#read MRENCLAVE <<< $($CLIENT list-workers | awk '/  MRENCLAVE: / { print $2 }')
+#cid=7eLSZLSMShw4ju9GvuMmoVgeZxZimtvsGTSvLEdvcRqQ
+MRENCLAVE=HVmtypxe23ngaWWaRYmAtKWThuYeXL5V1nUALpQQvC3A
+
 echo "  MRENCLAVE = ${MRENCLAVE}"
 
 # new account with
-# $CLIENT trusted new-account --mrenclave $MRENCLAVE --shard $SHARD
+# $CLIENT trusted new-account --mrenclave $MRENCLAVE --shard $cid
 
-account1=//Alice
-account2=//Bob
-account3=//Charlie
+# these must be registered bootstrappers
+account1=//AliceIncognito
+account2=//BobIncognito
+account3=//CharlieIncognito
 
-$CLIENT trusted get-registration $account1 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
+$CLIENT trusted get-registration $account1 --mrenclave $MRENCLAVE --shard $cid
 # should be zero
 
-$CLIENT trusted register-participant $account1 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
-$CLIENT trusted register-participant $account2 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
-$CLIENT trusted register-participant $account3 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
+$CLIENT trusted register-participant $account1 --mrenclave $MRENCLAVE --shard $cid
+$CLIENT trusted register-participant $account2 --mrenclave $MRENCLAVE --shard $cid
+$CLIENT trusted register-participant $account3 --mrenclave $MRENCLAVE --shard $cid
 
 echo "*** registered participants"
+sleep 10 # the above returns before TrustedCalls have been executed
 
 # should be 1,2 and 3
-$CLIENT trusted get-registration $account1 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
-$CLIENT trusted get-registration $account2 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
-$CLIENT trusted get-registration $account3 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
+$CLIENT trusted get-registration $account1 --mrenclave $MRENCLAVE --shard $cid 
+$CLIENT trusted get-registration $account2 --mrenclave $MRENCLAVE --shard $cid 
+$CLIENT trusted get-registration $account3 --mrenclave $MRENCLAVE --shard $cid 
+
+wait_for_phase ASSIGNING
+
+# nothing to do here until we can have debug getters
 
 wait_for_phase ATTESTING
 
@@ -82,9 +83,9 @@ sleep 5
 echo ""
 
 echo "*** start meetup"
-claim1=$($CLIENT trusted new-claim $account1 3 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR)
-claim2=$($CLIENT trusted new-claim $account2 3 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR)
-claim3=$($CLIENT trusted new-claim $account3 3 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR)
+claim1=$($CLIENT trusted new-claim $account1 3 --mrenclave $MRENCLAVE --shard $cid )
+claim2=$($CLIENT trusted new-claim $account2 3 --mrenclave $MRENCLAVE --shard $cid )
+claim3=$($CLIENT trusted new-claim $account3 3 --mrenclave $MRENCLAVE --shard $cid )
 
 echo "Claim1 = ${claim1}"
 echo "Claim2 = ${claim2}"
@@ -101,14 +102,14 @@ witness3_1=$($CLIENT sign-claim $account3 $claim1)
 witness3_2=$($CLIENT sign-claim $account3 $claim2)
 
 echo "*** send witnesses to chain"
-$CLIENT trusted register-attestations $account1 $witness2_1 $witness3_1 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
-$CLIENT trusted register-attestations $account2 $witness1_2 $witness3_2 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
-$CLIENT trusted register-attestations $account3 $witness1_3 $witness2_3 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
+$CLIENT trusted register-attestations $account1 $witness2_1 $witness3_1 --mrenclave $MRENCLAVE --shard $cid 
+$CLIENT trusted register-attestations $account2 $witness1_2 $witness3_2 --mrenclave $MRENCLAVE --shard $cid 
+$CLIENT trusted register-attestations $account3 $witness1_3 $witness2_3 --mrenclave $MRENCLAVE --shard $cid 
 
 
-$CLIENT trusted get-attestations $account1 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
-$CLIENT trusted get-attestations $account2 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
-$CLIENT trusted get-attestations $account3 --mrenclave $MRENCLAVE --shard $cid $WORKERADDR
+$CLIENT trusted get-attestations $account1 --mrenclave $MRENCLAVE --shard $cid 
+$CLIENT trusted get-attestations $account2 --mrenclave $MRENCLAVE --shard $cid 
+$CLIENT trusted get-attestations $account3 --mrenclave $MRENCLAVE --shard $cid 
 
 wait_for_phase REGISTERING
 
@@ -117,6 +118,6 @@ sleep 5
 echo ""
 
 echo "account balances for new currency with cid $cid"
-$CLIENT trusted balance $account1 ${WORKERADDR} --mrenclave $MRENCLAVE --shard $cid
-$CLIENT trusted balance $account2 ${WORKERADDR} --mrenclave $MRENCLAVE --shard $cid
-$CLIENT trusted balance $account3 ${WORKERADDR} --mrenclave $MRENCLAVE --shard $cid
+$CLIENT trusted balance $account1 --mrenclave $MRENCLAVE --shard $cid
+$CLIENT trusted balance $account2 --mrenclave $MRENCLAVE --shard $cid
+$CLIENT trusted balance $account3 --mrenclave $MRENCLAVE --shard $cid
