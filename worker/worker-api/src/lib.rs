@@ -15,7 +15,7 @@
 
 */
 
-use std::sync::mpsc::{channel, Receiver};
+use std::sync::mpsc::channel;
 use std::thread;
 
 use sgx_crypto_helper::rsa3072::Rsa3072PubKey;
@@ -37,10 +37,8 @@ pub struct Api {
 }
 
 impl Api {
-    pub fn new(url: String) -> Api {
-        Api {
-            url,
-        }
+    pub fn new(url: String) -> Self {
+        Self { url }
     }
 
     pub fn get_mu_ra_port(&self) -> Result<String, ()> {
@@ -62,10 +60,6 @@ impl Api {
         shard: &ShardIdentifier,
     ) -> Result<Vec<u8>, ()> {
         let req = ClientRequest::StfState(getter, shard.to_owned());
-        //
-        // let getter_str = hex::encode(getter.encode());
-        // let shard_str = hex::encode(shard.encode());
-        // let request = format!("{}::{}::{}", MSG_GET_STF_STATE, getter_str, shard_str);
         match Self::get(&self, req) {
             Ok(res) => {
                 let value_slice = hex::decode(&res).unwrap();

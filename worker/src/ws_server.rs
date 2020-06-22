@@ -37,7 +37,7 @@ pub struct WsServerRequest {
 
 impl WsServerRequest {
     pub fn new(client: Sender, request: ClientRequest) -> Self {
-        return Self { client, request };
+        Self { client, request }
     }
 }
 
@@ -50,7 +50,7 @@ pub fn start_ws_server(addr: String, worker: MpscSender<WsServerRequest>) {
 
     impl Handler for Server {
         fn on_message(&mut self, msg: Message) -> Result<()> {
-            warn!(
+            info!(
                 "[WS Server] Forwarding message to worker event loop: {:?}",
                 msg
             );
