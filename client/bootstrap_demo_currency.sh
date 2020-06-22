@@ -5,17 +5,17 @@
 # bootstrap a bot currency on Encointer Cantillon Testnet
 
 # Cantillon node endpoint
-#NURL=wss://cantillon.encointer.org
-#NPORT=443
-## Cantillon worker endpoint
-#WURL=wss://substratee03.scs.ch
-#WPORT=443
+NURL=wss://cantillon.encointer.org
+NPORT=443
+# Cantillon worker endpoint
+WURL=wss://substratee03.scs.ch
+WPORT=443
 
 # locals
-NURL=ws://127.0.0.1
-NPORT=9991
-WURL=ws://127.0.0.1
-WPORT=2000
+#NURL=ws://127.0.0.1
+#NPORT=9991
+#WURL=ws://127.0.0.1
+#WPORT=2000
 
 CLIENT="./../bin/encointer-client-teeproxy -u $NURL -p $NPORT -U $WURL -P $WPORT"
 
