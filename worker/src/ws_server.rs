@@ -54,11 +54,15 @@ pub fn start_ws_server(addr: String, worker: MpscSender<WsServerRequest>) {
                 "[WS Server] Forwarding message to worker event loop: {:?}",
                 msg
             );
-            let req: ClientRequest = Decode::decode(&mut msg.into_data().as_slice()).unwrap();
 
-            self.worker
-                .send(WsServerRequest::new(self.client.clone(), req))
-                .unwrap();
+            match ClientRequest::decode(&mut msg.into_data().as_slice()) {
+                Ok(req) => {
+                    self.worker
+                        .send(WsServerRequest::new(self.client.clone(), req))
+                        .unwrap();
+                }
+                Err(e) => self.client.send("Could not decode request").unwrap()
+            }
             Ok(())
         }
 
