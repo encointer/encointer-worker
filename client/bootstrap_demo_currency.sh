@@ -127,3 +127,5 @@ echo "account balances for new currency with cid $cid"
 $CLIENT trusted balance $account1 --mrenclave $MRENCLAVE --shard $cid
 $CLIENT trusted balance $account2 --mrenclave $MRENCLAVE --shard $cid
 $CLIENT trusted balance $account3 --mrenclave $MRENCLAVE --shard $cid
+echo "total issuance (publicly readable)"
+$CLIENT trusted total-issuance --mrenclave $MRENCLAVE --shard $cid
