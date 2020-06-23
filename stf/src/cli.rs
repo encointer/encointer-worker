@@ -201,6 +201,28 @@ pub fn cmd<'a>(
                 }),
         )
         .add_cmd(
+            Command::new("total-issuance")
+                .description("query total issuance for currency (public information)")
+                .runner(move |_args: &str, matches: &ArgMatches<'_>| {
+                    let (_mrenclave, shard) = get_identifiers(matches);
+                    let top: TrustedOperation = PublicGetter::total_issuance(shard)
+                        .into();
+                    let res = perform_operation(matches, &top);
+                    let bal = if let Some(v) = res {
+                        if let Ok(vd) = <BalanceType>::decode(&mut v.as_slice()) {
+                            vd
+                        } else {
+                            info!("could not decode value. maybe hasn't been set? {:x?}", v);
+                            BalanceType::from_num(0)
+                        }
+                    } else {
+                        BalanceType::from_num(0)
+                    };
+                    println!("{}", bal);
+                    Ok(())
+                }),
+        )
+        .add_cmd(
             Command::new("register-participant")
                 .description("register participant for next encointer ceremony")
                 .options(|app| {
