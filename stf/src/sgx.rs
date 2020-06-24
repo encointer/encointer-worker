@@ -11,12 +11,12 @@ use sp_core::crypto::AccountId32;
 use sp_io::SgxExternalitiesTrait;
 use sp_runtime::traits::Dispatchable;
 use encointer_scheduler::{CeremonyPhaseType, OnCeremonyPhaseChange};
-use encointer_balances::BalanceType;
+use encointer_balances::{BalanceType, BalanceEntry};
 use encointer_currencies::{CurrencyIdentifier, Location};
 use encointer_ceremonies::{ParticipantIndexType, MeetupIndexType};
 use sgx_runtime::Moment;
 
-use crate::{AccountId, State, Stf, TrustedCall, TrustedCallSigned, Getter, PublicGetter, TrustedGetter, TrustedGetterSigned, ShardIdentifier};
+use crate::{AccountId, State, Stf, TrustedCall, TrustedCallSigned, Getter, PublicGetter, TrustedGetter, ShardIdentifier};
 
 /// Simple blob that holds a call in encoded format
 #[derive(Clone, Debug)]
@@ -142,7 +142,7 @@ impl Stf {
             match getter {
                 Getter::trusted(g) => match g.getter {
                     TrustedGetter::balance(who, cid) => {
-                        let balance: BalanceType = encointer_balances::Module::<sgx_runtime::Runtime>::balance(cid, &who.into());
+                        let balance: BalanceEntry<BlockNumber> = encointer_balances::Module::<sgx_runtime::Runtime>::balance_entry(cid, AccountId32::from(who));
                         Some(balance.encode())
                     },
                     TrustedGetter::registration(who, cid) => {
@@ -168,7 +168,7 @@ impl Stf {
                 Getter::public(g) => match g {
                     PublicGetter::total_issuance(cid) => {
                         let c_index = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
-                        let balance: BalanceType = encointer_balances::Module::<sgx_runtime::Runtime>::total_issuance(cid);
+                        let balance: BalanceEntry<BlockNumber> = encointer_balances::Module::<sgx_runtime::Runtime>::total_issuance_entry(cid);
                         Some(balance.encode())
                     }
                 }
