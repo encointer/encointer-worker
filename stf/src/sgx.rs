@@ -6,7 +6,7 @@ use codec::{Decode, Encode};
 use derive_more::Display;
 use log_sgx::*;
 use metadata::StorageHasher;
-use sgx_runtime::Runtime;
+use sgx_runtime::{Runtime, BlockNumber};
 use sp_core::crypto::AccountId32;
 use sp_io::SgxExternalitiesTrait;
 use sp_runtime::traits::Dispatchable;
@@ -85,6 +85,14 @@ impl Stf {
             }
         });
     }
+
+    pub fn update_block_number(ext: &mut State, number: BlockNumber) {
+        ext.execute_with(|| {
+            let key = storage_value_key("System", "Number");
+            sp_io::storage::set(&key, &number.encode());
+        });
+    }
+
 
     pub fn execute(
         ext: &mut State,
