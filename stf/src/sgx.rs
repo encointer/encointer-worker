@@ -10,6 +10,7 @@ use sgx_runtime::{Runtime, BlockNumber};
 use sp_core::crypto::AccountId32;
 use sp_io::SgxExternalitiesTrait;
 use sp_runtime::traits::Dispatchable;
+use support::traits::UnfilteredDispatchable;
 use encointer_scheduler::{CeremonyPhaseType, OnCeremonyPhaseChange, CeremonyIndexType};
 use encointer_balances::{BalanceType, BalanceEntry};
 use encointer_currencies::{CurrencyIdentifier, Location};
@@ -111,7 +112,7 @@ impl Stf {
                 TrustedCall::balance_transfer(from, to, cid, value) => {
                     let origin = sgx_runtime::Origin::signed(AccountId32::from(from));
                     sgx_runtime::EncointerBalancesCall::<Runtime>::transfer(AccountId32::from(to), cid, value)
-                        .dispatch(origin)
+                        .dispatch_bypass_filter(origin)
                         .map_err(|_| StfError::Dispatch("balance_transfer".to_string()))?;
                     Ok(())
                 }
@@ -123,7 +124,7 @@ impl Stf {
                     }
 
                     sgx_runtime::EncointerCeremoniesCall::<Runtime>::register_participant(cid, proof)
-                        .dispatch(origin)
+                        .dispatch_bypass_filter(origin)
                         .map_err(|_| StfError::Dispatch("ceremonies_register_participant".to_string()))?;
                     Ok(())
                 }
@@ -141,7 +142,7 @@ impl Stf {
         
                     let origin = sgx_runtime::Origin::signed(AccountId32::from(from));
                     sgx_runtime::EncointerCeremoniesCall::<Runtime>::register_attestations(attestations)
-                        .dispatch(origin)
+                        .dispatch_bypass_filter(origin)
                         .map_err(|_| StfError::Dispatch("ceremonies_register_attestations".to_string()))?;
                     Ok(())
                 }
@@ -149,7 +150,7 @@ impl Stf {
                     Self::ensure_ceremony_master(ceremony_master)?;
                     let origin = sgx_runtime::Origin::signed(AccountId32::from(ceremony_master));
                     sgx_runtime::EncointerCeremoniesCall::<Runtime>::grant_reputation(cid, reputable)
-                        .dispatch(origin)
+                        .dispatch_bypass_filter(origin)
                         .map_err(|_| StfError::Dispatch("ceremonies_grant_reputation".to_string()))?;
                     Ok(())
                 }
