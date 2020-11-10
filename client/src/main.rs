@@ -504,7 +504,7 @@ fn get_state(matches: &ArgMatches<'_>, getter: Getter) -> Option<Vec<u8>> {
     debug!("calling workerapi to get state value, {:?}", getter);
     let ret = worker_api
         .get_stf_state(getter, &shard)
-        .expect("getting value failed");
+        .expect("getting value from worker API failed");
     // strip whitespace padding through decoding
     if let Ok(vd) = Decode::decode(&mut ret.as_slice()) {
         debug!("decoded return value: {:?} ", vd);

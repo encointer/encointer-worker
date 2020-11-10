@@ -5880,6 +5880,7 @@ dependencies = [
  "log 0.4.11",
  "mio",
  "mio-extras",
+ "openssl",
  "rand 0.4.6",
  "sha1 0.6.0",
  "slab",

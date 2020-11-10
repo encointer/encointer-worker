@@ -340,6 +340,39 @@ pub fn cmd<'a>(
                 }),
         )
         .add_cmd(
+            Command::new("get-meetup")
+                .description("query meetup index assigned to account")
+                .options(|app| {
+                    app.arg(
+                        Arg::with_name("accountid")
+                            .takes_value(true)
+                            .required(true)
+                            .value_name("SS58")
+                            .help("AccountId in ss58check format"),
+                    )
+                })
+                .runner(move |_args: &str, matches: &ArgMatches<'_>| {
+                    let arg_who = matches.value_of("accountid").unwrap();
+                    // println!("arg_who = {:?}", arg_who);
+                    let who = get_pair_from_str(matches, arg_who);
+
+                    let (_mrenclave, shard) = get_identifiers(matches);
+                    let top: TrustedOperation = TrustedGetter::meetup_index_and_location(who.public().into(), shard)
+                        .sign(&sr25519_core::Pair::from(who.clone()))
+                        .into();
+
+                    let res = perform_operation(matches, &top).unwrap();
+                    let (mindex, mlocation): (MeetupIndexType, Option<Location>) = Decode::decode(&mut res.as_slice()).unwrap();
+                    if mindex==0 || mlocation.is_none() {
+                        panic!("participant {} has not been assigned to a meetup", arg_who);
+                    };
+                    info!("got mindex: {:?}", mindex);
+                    info!("got location: {:?}", mlocation);
+                    println!("{}", mindex);
+                    Ok(())
+                }),
+        )
+        .add_cmd(
             Command::new("register-attestations")
                 .description("register encointer ceremony attestations")
                 .options(|app| {
@@ -593,7 +626,7 @@ fn get_block_number(api: &Api<sr25519::Pair>) -> BlockNumber {
 fn get_demurrage_per_block(api: &Api<sr25519::Pair>, cid: CurrencyIdentifier) -> BalanceType {
     let cp: CurrencyPropertiesType = api
         .get_storage_map("EncointerCurrencies", "CurrencyProperties", cid, None)
-        .unwrap();
+        .expect("unknown currency");
     debug!("CurrencyProperties are {:?}", cp);
     cp.demurrage_per_block
 }
