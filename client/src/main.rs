@@ -56,17 +56,14 @@ use substrate_api_client::{
 };
 use my_node_runtime::{
     substratee_registry::{Enclave, Request},
-    AccountId, Event, Hash, Signature, Moment, ONE_DAY, BalanceType, BalanceEntry, BlockNumber, Header
+    AccountId, Event, Hash, Signature, Moment, BlockNumber, Header
 };
-use encointer_ceremonies::{
-    Attestation, AttestationIndexType, ClaimOfAttendance,
-    CurrencyCeremony, MeetupIndexType, ParticipantIndexType, ProofOfAttendance, Reputation
-};
+
 use encointer_scheduler::{CeremonyIndexType, CeremonyPhaseType};
-use encointer_currencies::{CurrencyIdentifier, CurrencyPropertiesType, Location, Degree};
+use encointer_currencies::{CurrencyIdentifier, Location, Degree};
 
 use substratee_stf::{
-    cli::get_identifiers, ShardIdentifier, TrustedCallSigned, TrustedGetterSigned,
+    cli::get_identifiers, ShardIdentifier, TrustedCallSigned, 
     TrustedOperation, Getter
 };
 use substratee_worker_api::Api as WorkerApi;

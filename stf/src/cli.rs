@@ -39,6 +39,7 @@ use sp_runtime::{MultiSignature, AccountId32};
 
 type Moment = u64;
 
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 const KEYSTORE_PATH: &str = "my_trusted_keystore";
 
 pub fn cmd<'a>(
@@ -74,7 +75,12 @@ pub fn cmd<'a>(
                     .default_value("//Alice")
                     .help("signer for publicly observable extrinsic"),
             )
+            .name("encointer-client-teeproxy")
+            .version(VERSION)
+            .author("Supercomputing Systems AG <info@scs.ch>")
             .about("trusted calls to worker enclave")
+            .after_help("stf subcommands depend on the stf crate this has been built against")
+
         })
         .add_cmd(
             Command::new("new-account")
