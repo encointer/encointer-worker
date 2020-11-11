@@ -98,7 +98,7 @@ pub fn cmd<'a>(
                 .description("lists all accounts in keystore for the substraTEE chain")
                 .runner(|_args: &str, matches: &ArgMatches<'_>| {
                     let store = Store::open(get_keystore_path(matches), None).unwrap();
-                    println!("sr25519 keys:");
+                    info!("sr25519 keys:");
                     for pubkey in store
                         .read()
                         .public_keys::<sr25519::AppPublic>()
@@ -107,7 +107,7 @@ pub fn cmd<'a>(
                     {
                         println!("{}", pubkey.to_ss58check());
                     }
-                    println!("ed25519 keys:");
+                    info!("ed25519 keys:");
                     for pubkey in store
                         .read()
                         .public_keys::<ed25519::AppPublic>()
@@ -189,7 +189,6 @@ pub fn cmd<'a>(
                 })
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
                     let arg_who = matches.value_of("accountid").unwrap();
-                    println!("arg_who = {:?}", arg_who);
                     let who = get_pair_from_str(matches, arg_who);
                     let (_mrenclave, shard) = get_identifiers(matches);
                     let top: TrustedOperation = TrustedGetter::balance(sr25519_core::Public::from(who.public()), shard)
