@@ -881,7 +881,7 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
 name = "encointer-client-teeproxy"
-version = "0.6.12-sub2.0.0"
+version = "0.6.13-sub2.0.0"
 dependencies = [
  "base58",
  "blake2-rfc",
@@ -957,7 +957,7 @@ dependencies = [
 
 [[package]]
 name = "encointer-worker"
-version = "0.6.12-sub2.0.0"
+version = "0.6.13-sub2.0.0"
 dependencies = [
  "base58",
  "cid",
@@ -5068,7 +5068,7 @@ checksum = "54cab12167e32b38a62c5ea5825aa0874cde315f907a46aad2b05aa8ef3d862f"
 
 [[package]]
 name = "substratee-node-primitives"
-version = "0.6.12-sub2.0.0"
+version = "0.6.13-sub2.0.0"
 dependencies = [
  "base58",
  "encointer-node-teeproxy-runtime",
@@ -5083,7 +5083,7 @@ dependencies = [
 
 [[package]]
 name = "substratee-stf"
-version = "0.6.12-sub2.0.0"
+version = "0.6.13-sub2.0.0"
 dependencies = [
  "base58",
  "clap",
@@ -5094,7 +5094,7 @@ dependencies = [
  "frame-metadata 11.0.0-rc6",
  "frame-support",
  "frame-system",
- "hex 0.4.2",
+ "hex 0.3.2",
  "log 0.4.11",
  "log 0.4.8",
  "pallet-encointer-balances",
@@ -5116,7 +5116,7 @@ dependencies = [
 
 [[package]]
 name = "substratee-worker-api"
-version = "0.6.12-sub2.0.0"
+version = "0.6.13-sub2.0.0"
 dependencies = [
  "hex 0.4.2",
  "log 0.4.11",

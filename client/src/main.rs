@@ -34,7 +34,7 @@ use std::path::PathBuf;
 
 use base58::{FromBase58, ToBase58};
 
-use clap::{Arg, ArgMatches};
+use clap::{Arg, ArgMatches, AppSettings};
 use clap_nested::{Command, Commander};
 use codec::{Decode, Encode};
 use log::*;
@@ -51,12 +51,14 @@ use serde_json;
 use std::fs;
 use std::convert::TryFrom;
 use substrate_api_client::{
-    compose_extrinsic, events::EventsDecoder, extrinsic::xt_primitives::UncheckedExtrinsicV4,
+    compose_extrinsic, compose_extrinsic_offline,
+    events::EventsDecoder, extrinsic::xt_primitives::UncheckedExtrinsicV4,
     node_metadata::Metadata, utils::hexstr_to_vec, Api, XtStatus,
 };
 use my_node_runtime::{
     substratee_registry::{Enclave, Request},
-    AccountId, Event, Hash, Signature, Moment, BlockNumber, Header
+    AccountId, Event, Hash, Signature, Moment, BlockNumber, Header,
+    Call, BalancesCall
 };
 
 use encointer_scheduler::{CeremonyIndexType, CeremonyPhaseType};
@@ -174,39 +176,45 @@ fn main() {
         )
         .add_cmd(
             Command::new("faucet")
-                .description("send some bootstrapping funds to an account")
+                .description("send some bootstrapping funds to supplied account(s)")
                 .options(|app| {
-                    app.arg(
-                        Arg::with_name("AccountId")
+                    app.setting(AppSettings::ColoredHelp)
+                    .arg(
+                        Arg::with_name("accounts")
                             .takes_value(true)
                             .required(true)
-                            .value_name("SS58")
-                            .help("AccountId to be funded"),
+                            .value_name("ACCOUNT")
+                            .multiple(true)
+                            .min_values(1)
+                            .help("Account(s) to be funded, ss58check encoded"),
                     )
                 })
                 .runner(|_args: &str, matches: &ArgMatches<'_>| {
                     let api = get_chain_api(matches);
-                    let account = matches.value_of("AccountId").unwrap();
-                    let accountid = get_accountid_from_str(account);
                     let _api = api.set_signer(AccountKeyring::Alice.pair());
-                    let xt = _api.balance_transfer(accountid.clone(), PREFUNDING_AMOUNT);
-                    info!(
-                        "[+] Alice is generous and pre funds account {}\n",
-                        accountid.to_ss58check()
-                    );
-                    let tx_hash = _api
-                        .send_extrinsic(xt.hex_encode(), XtStatus::InBlock)
-                        .unwrap();
-                    info!(
-                        "[+] Pre-Funding transaction got finalized. Hash: {:?}\n",
-                        tx_hash
-                    );
-                    let result = _api.get_account_data(&accountid).unwrap();
-                    println!(
-                        "balance for {} is now {}",
-                        accountid.to_ss58check(),
-                        result.free
-                    );
+                    let accounts: Vec<_> = matches.values_of("accounts").unwrap().collect();
+
+                    let mut nonce = _api.get_nonce().unwrap();
+                    for account in accounts.into_iter() {
+                        let to = get_accountid_from_str(account);
+                        #[allow(clippy::redundant_clone)]
+                        let xt: UncheckedExtrinsicV4<_> = compose_extrinsic_offline!(
+                            _api.clone().signer.unwrap(),
+                            Call::Balances(BalancesCall::transfer(to.clone(), PREFUNDING_AMOUNT)),
+                            nonce,
+                            Era::Immortal,
+                            _api.genesis_hash,
+                            _api.genesis_hash,
+                            _api.runtime_version.spec_version,
+                            _api.runtime_version.transaction_version
+                        );
+                        // send and watch extrinsic until finalized
+                        println!("Faucet drips to {} (Alice's nonce={})", to, nonce);
+                        let _blockh = _api
+                            .send_extrinsic(xt.hex_encode(), XtStatus::Ready)
+                            .unwrap();
+                        nonce += 1;
+                    }
                     Ok(())
                 }),
         )
@@ -214,7 +222,8 @@ fn main() {
             Command::new("balance")
                 .description("query on-chain balance for AccountId")
                 .options(|app| {
-                    app.arg(
+                    app.setting(AppSettings::ColoredHelp)
+                    .arg(
                         Arg::with_name("AccountId")
                             .takes_value(true)
                             .required(true)
@@ -239,7 +248,8 @@ fn main() {
             Command::new("transfer")
                 .description("transfer funds from one on-chain account to another")
                 .options(|app| {
-                    app.arg(
+                    app.setting(AppSettings::ColoredHelp)
+                    .arg(
                         Arg::with_name("from")
                             .takes_value(true)
                             .required(true)
@@ -312,7 +322,8 @@ fn main() {
             Command::new("listen")
                 .description("listen to on-chain events")
                 .options(|app| {
-                    app.arg(
+                    app.setting(AppSettings::ColoredHelp)
+                    .arg(
                         Arg::with_name("events")
                             .short("e")
                             .long("exit-after")
@@ -330,7 +341,8 @@ fn main() {
             Command::new("new-currency")
                 .description("register new currency")
                 .options(|app| {
-                    app.arg(
+                    app.setting(AppSettings::ColoredHelp)
+                    .arg(
                         Arg::with_name("specfile")
                             .takes_value(true)
                             .required(true)

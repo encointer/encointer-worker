@@ -234,7 +234,7 @@ checksum = "4785bdd1c96b2a846b2bd7cc02e86b6b3dbf14e7e53446c4f54c92a361040822"
 
 [[package]]
 name = "chain-relay"
-version = "0.6.13-sub2.0.0"
+version = "0.6.12-sub2.0.0"
 dependencies = [
  "derive_more",
  "finality-grandpa 0.11.2",
@@ -2432,7 +2432,7 @@ checksum = "54cab12167e32b38a62c5ea5825aa0874cde315f907a46aad2b05aa8ef3d862f"
 
 [[package]]
 name = "substratee-node-primitives"
-version = "0.6.12-sub2.0.0"
+version = "0.6.13-sub2.0.0"
 dependencies = [
  "parity-scale-codec",
  "primitive-types 0.6.2",
@@ -2442,7 +2442,7 @@ dependencies = [
 
 [[package]]
 name = "substratee-stf"
-version = "0.6.12-sub2.0.0"
+version = "0.6.13-sub2.0.0"
 dependencies = [
  "derive_more",
  "env_logger",
@@ -2466,7 +2466,7 @@ dependencies = [
 
 [[package]]
 name = "substratee-worker-enclave"
-version = "0.6.12-sub2.0.0"
+version = "0.6.13-sub2.0.0"
 dependencies = [
  "aes",
  "base64",

@@ -6,7 +6,8 @@ import geojson
 from math import sqrt, ceil
 from random_word import RandomWords
 from pyproj import Geod
-from shutil import copytree
+from shutil import copy
+import os
 
 geoid = Geod(ellps='WGS84')
 
@@ -118,7 +119,7 @@ def list_meetups(cid):
 
 def register_attestations(account, attestations, cid):
     global cli_tail
-    subprocess.run(cli + ["trusted", "register-attestations", account] + attestations + cli_tail, stdout=subprocess.PIPE)
+    subprocess.run(cli + ["trusted", "register-attestations", account] + attestations + ["--xt-signer", account] + cli_tail, stdout=subprocess.PIPE)
 
 
 def generate_currency_spec(name, locations, bootstrappers):
@@ -146,13 +147,25 @@ def init():
     print("initializing community")
     specfile = random_currency_spec(16)
     print("generated currency spec: ", specfile)
+    await_block()
     cid = new_currency(specfile)
+    if cid == '':
+        raise NameError('currency registration unsuccessful')
     print("created community with cid: ", cid)
     f = open("cid.txt", "w")
     f.write(cid)
     f.close()
-    # now we need t ocopy over our accounts to the new shard
-    copytree("./my_trusted_keystore/" + MRENCLAVE, "./my_trusted_keystore/" + cid)
+    # now we need to copy over our accounts to the new shard and to the untrusted onchain store
+    try:
+        os.symlink("./my_trusted_keystore/" + MRENCLAVE, "./my_keystore")
+    except OSError as err:
+        print("warning: {0}".format(err))
+    os.chdir("./my_trusted_keystore/")
+    try:
+        os.symlink(MRENCLAVE, cid)
+    except OSError as err:
+        print("warning: {0}".format(err))
+    os.chdir("..")
 
 def run():
     global cli_tail
