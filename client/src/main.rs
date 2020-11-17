@@ -330,6 +330,13 @@ fn main() {
                             .takes_value(true)
                             .help("exit after given number of SubstraTEE events"),
                     )
+                    .arg(
+                        Arg::with_name("blocks")
+                            .short("b")
+                            .long("await-blocks")
+                            .takes_value(true)
+                            .help("exit after given number of blocks"),
+                    )
                 })
                 .runner(|_args: &str, matches: &ArgMatches<'_>| {
                     listen(matches);
@@ -611,6 +618,7 @@ fn listen(matches: &ArgMatches<'_>) {
     info!("Subscribing to events");
     let (events_in, events_out) = channel();
     let mut count = 0u32;
+    let mut blocks = 0u32;
     api.subscribe_events(events_in);
     loop {
         if matches.is_present("events")
@@ -618,10 +626,16 @@ fn listen(matches: &ArgMatches<'_>) {
         {
             return;
         };
+        if matches.is_present("blocks")
+            && blocks >= 1 + value_t!(matches.value_of("blocks"), u32).unwrap()
+        {
+            return;
+        };
         let event_str = events_out.recv().unwrap();
         let _unhex = hexstr_to_vec(event_str).unwrap();
         let mut _er_enc = _unhex.as_slice();
         let _events = Vec::<frame_system::EventRecord<Event, Hash>>::decode(&mut _er_enc);
+        blocks += 1;
         match _events {
             Ok(evts) => {
                 for evr in &evts {

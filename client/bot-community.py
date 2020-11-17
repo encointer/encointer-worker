@@ -1,4 +1,14 @@
 #!/usr/bin/python3
+
+"""
+This tool allows to create and grow encointer bot communities
+
+usage for local node and worker:
+  bot-community.py init
+  bot-community.py benchmark
+
+"""
+
 import argparse
 import subprocess
 import geojson
@@ -7,17 +17,20 @@ from math import sqrt, ceil
 from random_word import RandomWords
 from pyproj import Geod
 from shutil import copy
+from time import sleep
 import os
 
 geoid = Geod(ellps='WGS84')
 
-cli = ["./encointer-client", "-u", "wss://cantillon.encointer.org", "-p", "443", "-U", "wss://substratee03.scs.ch", "-P", "443"]
+#cli = ["./encointer-client", "-u", "wss://cantillon.encointer.org", "-p", "443", "-U", "wss://substratee03.scs.ch", "-P", "443"]
+cli = ["./encointer-client", "-p", "9979", "-P", "2000"]
 timeout = ["timeout", "1s"]
-MRENCLAVE = "3YM1AH5qdQAsh6BjYqDeYKQbuKgyDgNiSoFmqSUJTYvV"
+#MRENCLAVE = "3YM1AH5qdQAsh6BjYqDeYKQbuKgyDgNiSoFmqSUJTYvV" #v0.6.12
+MRENCLAVE = "6vbsq1atftUHz3oRrG4LQhxhWgARK2aaWAJePqzYQdWV" #v0.6.13
 cli_tail = ["--mrenclave", MRENCLAVE]
 
 NUMBER_OF_LOCATIONS = 10
-MAX_POPULATION = 2 * NUMBER_OF_LOCATIONS
+MAX_POPULATION = 10 * NUMBER_OF_LOCATIONS
 
 def move_point(point, az, dist):
     """ move a point a certain distance [meters] into a direction (azimuth) in [degrees] """
@@ -83,7 +96,7 @@ def await_block():
 
 def register_participant(account, cid):
     global cli_tail
-    ret = subprocess.run(cli + ["trusted", "register-participant", account] + cli_tail, stdout=subprocess.PIPE)
+    ret = subprocess.run(timeout + cli + ["trusted", "register-participant", account] + ["--xt-signer", account] + cli_tail, stdout=subprocess.PIPE)
     #print(ret.stdout.decode("utf-8"))
 
 def new_claim(account, vote, cid):
@@ -119,7 +132,7 @@ def list_meetups(cid):
 
 def register_attestations(account, attestations, cid):
     global cli_tail
-    subprocess.run(cli + ["trusted", "register-attestations", account] + attestations + ["--xt-signer", account] + cli_tail, stdout=subprocess.PIPE)
+    subprocess.run(timeout + cli + ["trusted", "register-attestations", account] + attestations + ["--xt-signer", account] + cli_tail, stdout=subprocess.PIPE)
 
 
 def generate_currency_spec(name, locations, bootstrappers):
@@ -172,7 +185,8 @@ def run():
     f = open("cid.txt", "r")
     cid = f.read()
     print("cid is " + cid)
-    cli_tail += ["--shard", cid]
+    if not "--shard" in cli_tail:
+        cli_tail += ["--shard", cid]
     phase = get_phase()
     print("phase is " + phase)
     accounts = list_accounts(cid)
@@ -228,9 +242,11 @@ def benchmark():
     print("will grow population forever")
     while True:
         run()
-        await_block
+        await_block()
         next_phase()
-        await_block
+        await_block()
+        print("waiting 30s to make sure the chain relay has synced")
+        sleep(30)
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(prog='bot-community')
