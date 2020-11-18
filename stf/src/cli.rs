@@ -17,7 +17,7 @@
 
 use crate::{AccountId, ShardIdentifier, TrustedCall, TrustedGetter, PublicGetter, TrustedOperation, Attestation};
 use base58::{FromBase58, ToBase58};
-use clap::{Arg, ArgMatches};
+use clap::{Arg, ArgMatches, AppSettings, value_t};
 use clap_nested::{Command, Commander, MultiCommand};
 use codec::{Decode, Encode};
 use log::*;
@@ -31,8 +31,8 @@ use fixed::transcendental::exp;
 use my_node_runtime::{BlockNumber, Header, ONE_DAY, Signature};
 use encointer_balances::{BalanceType, BalanceEntry};
 use encointer_currencies::{Location, CurrencyIdentifier, CurrencyPropertiesType};
-use encointer_ceremonies::{MeetupIndexType, ClaimOfAttendance, ParticipantIndexType};
-use encointer_scheduler::CeremonyPhaseType;
+use encointer_ceremonies::{MeetupIndexType, ClaimOfAttendance, ParticipantIndexType, ProofOfAttendance};
+use encointer_scheduler::{CeremonyPhaseType, CeremonyIndexType};
 use hex;
 use substrate_api_client::Api;
 use sp_runtime::{MultiSignature, AccountId32};
@@ -47,7 +47,8 @@ pub fn cmd<'a>(
 ) -> MultiCommand<'a, str, str> {
     Commander::new()
         .options(|app| {
-            app.arg(
+            app.setting(AppSettings::ColoredHelp)
+            .arg(
                 Arg::with_name("mrenclave")
                     .short("m")
                     .long("mrenclave")
@@ -124,7 +125,8 @@ pub fn cmd<'a>(
             Command::new("transfer")
                 .description("send funds from one incognito account to another")
                 .options(|app| {
-                    app.arg(
+                    app.setting(AppSettings::ColoredHelp)
+                    .arg(
                         Arg::with_name("from")
                             .takes_value(true)
                             .required(true)
@@ -179,7 +181,8 @@ pub fn cmd<'a>(
             Command::new("balance")
                 .description("query balance for incognito account in keystore")
                 .options(|app| {
-                    app.arg(
+                    app.setting(AppSettings::ColoredHelp)
+                    .arg(
                         Arg::with_name("accountid")
                             .takes_value(true)
                             .required(true)
@@ -285,27 +288,42 @@ pub fn cmd<'a>(
             Command::new("register-participant")
                 .description("register participant for next encointer ceremony")
                 .options(|app| {
-                    app.arg(
+                    app.setting(AppSettings::ColoredHelp)
+                    .arg(
                         Arg::with_name("accountid")
                             .takes_value(true)
                             .required(true)
                             .value_name("SS58")
                             .help("AccountId in ss58check format"),
                     )
+                    .arg(
+                        Arg::with_name("reputation")
+                            .short("r")
+                            .long("reputation")
+                            .help("prove attendance reputation for last ceremony"),
+                    )
                 })
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
                     let arg_who = matches.value_of("accountid").unwrap();
+                    let accountid = get_accountid_from_str(arg_who);
                     let who = get_pair_from_str(matches, arg_who);
                     let (mrenclave, shard) = get_identifiers(matches);
+                    let api = get_chain_api(matches);
+                    let cindex = get_ceremony_index(&api);
                     let nonce = 0; // FIXME: hard coded for now
                     println!(
                         "send TrustedCall::register_participant for {}",
                         who.public(),
                     );
+                    let proof = match value_t!(matches, "reputation", bool).unwrap_or_default() {
+                        true => Some(prove_attendance(&accountid, shard, cindex - 1, &who)),
+                        false => None
+                    };
+                    debug!("reputation: {:?}", proof);
                     let top: TrustedOperation = TrustedCall::ceremonies_register_participant(
                         sr25519_core::Public::from(who.public()),
                         shard, // for encointer we assume that every currency has its own shard. so shard == cid
-                        None)
+                        proof)
                         .sign(&sr25519_core::Pair::from(who), nonce, &mrenclave, &shard)
                         .into();
                     perform_operation(matches, &top);
@@ -316,7 +334,8 @@ pub fn cmd<'a>(
             Command::new("get-registration")
                 .description("get participant registration index for next encointer ceremony")
                 .options(|app| {
-                    app.arg(
+                    app.setting(AppSettings::ColoredHelp)
+                    .arg(
                         Arg::with_name("accountid")
                             .takes_value(true)
                             .required(true)
@@ -348,7 +367,8 @@ pub fn cmd<'a>(
             Command::new("get-meetup")
                 .description("query meetup index assigned to account")
                 .options(|app| {
-                    app.arg(
+                    app.setting(AppSettings::ColoredHelp)
+                    .arg(
                         Arg::with_name("accountid")
                             .takes_value(true)
                             .required(true)
@@ -381,20 +401,21 @@ pub fn cmd<'a>(
             Command::new("register-attestations")
                 .description("register encointer ceremony attestations")
                 .options(|app| {
-                    app.arg(
+                    app.setting(AppSettings::ColoredHelp)
+                    .arg(
                         Arg::with_name("accountid")
                             .takes_value(true)
                             .required(true)
                             .value_name("SS58")
                             .help("AccountId in ss58check format"),
                     )
-                        .arg(
-                            Arg::with_name("attestations")
-                                .takes_value(true)
-                                .required(true)
-                                .multiple(true)
-                                .min_values(2)
-                        )
+                    .arg(
+                        Arg::with_name("attestations")
+                            .takes_value(true)
+                            .required(true)
+                            .multiple(true)
+                            .min_values(2)
+                    )
                 })
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
                     let arg_who = matches.value_of("accountid").unwrap();
@@ -426,7 +447,8 @@ pub fn cmd<'a>(
             Command::new("get-attestations")
                 .description("get attestations registration index for this encointer ceremony")
                 .options(|app| {
-                    app.arg(
+                    app.setting(AppSettings::ColoredHelp)
+                    .arg(
                         Arg::with_name("accountid")
                             .takes_value(true)
                             .required(true)
@@ -458,7 +480,8 @@ pub fn cmd<'a>(
             Command::new("new-claim")
                 .description("create a fresh claim of attendance for account")
                 .options(|app| {
-                    app.arg(
+                    app.setting(AppSettings::ColoredHelp)
+                    .arg(
                         Arg::with_name("accountid")
                             .takes_value(true)
                             .required(true)
@@ -520,7 +543,8 @@ pub fn cmd<'a>(
             Command::new("sign-claim")
                 .description("sign someone's claim to attest personhood")
                 .options(|app| {
-                    app.arg(
+                    app.setting(AppSettings::ColoredHelp)
+                    .arg(
                         Arg::with_name("signer")
                             .takes_value(true)
                             .required(true)
@@ -692,5 +716,30 @@ fn sign_claim(matches: &ArgMatches<'_>, claim: ClaimOfAttendance<AccountId, Mome
         claim: claim.clone(),
         signature: Signature::from(sr25519_core::Signature::from(pair.sign(&claim.encode()))),
         public: accountid,
+    }
+}
+
+fn get_ceremony_index(api: &Api<sr25519::Pair>) -> CeremonyIndexType {
+    api.get_storage_value("EncointerScheduler", "CurrentCeremonyIndex", None)
+        .unwrap()
+}
+
+fn prove_attendance(
+    prover: &AccountId,
+    cid: CurrencyIdentifier,
+    cindex: CeremonyIndexType,
+    attendee: &sr25519::AppPair,
+) -> ProofOfAttendance<Signature, AccountId32> {
+    let msg = (prover.clone(), cindex);
+    debug!("generating proof of attendance for {} and cindex: {}", prover, cindex);
+    debug!("signature payload is {:x?}", msg.encode());
+    ProofOfAttendance {
+        prover_public: AccountId32::from(*prover),
+        currency_identifier: cid,
+        ceremony_index: cindex,
+        attendee_public: AccountId32::from(sr25519_core::Public::from(attendee.public())),
+        attendee_signature: Signature::from(sr25519_core::Signature::from(
+            attendee.sign(&msg.encode()),
+        )),
     }
 }

@@ -13,7 +13,7 @@ import argparse
 import subprocess
 import geojson
 
-from math import sqrt, ceil
+from math import sqrt, ceil, floor
 from random_word import RandomWords
 from pyproj import Geod
 from shutil import copy
@@ -29,8 +29,8 @@ timeout = ["timeout", "1s"]
 MRENCLAVE = "6vbsq1atftUHz3oRrG4LQhxhWgARK2aaWAJePqzYQdWV" #v0.6.13
 cli_tail = ["--mrenclave", MRENCLAVE]
 
-NUMBER_OF_LOCATIONS = 10
-MAX_POPULATION = 10 * NUMBER_OF_LOCATIONS
+NUMBER_OF_LOCATIONS = 100
+MAX_POPULATION = 12 * NUMBER_OF_LOCATIONS
 
 def move_point(point, az, dist):
     """ move a point a certain distance [meters] into a direction (azimuth) in [degrees] """
@@ -52,6 +52,7 @@ def populate_locations(northwest, n, dist=1000):
     return locations
 
 def next_phase():
+    print("force-progressing phase...")
     subprocess.run(cli + ["next-phase"])
 
 def get_phase():
@@ -94,10 +95,14 @@ def new_currency(specfile):
 def await_block():
     subprocess.run(cli + ["listen", "-b", "1"], stdout=subprocess.PIPE)
 
-def register_participant(account, cid):
+def register_participant(account, cid, rep):
     global cli_tail
-    ret = subprocess.run(timeout + cli + ["trusted", "register-participant", account] + ["--xt-signer", account] + cli_tail, stdout=subprocess.PIPE)
-    #print(ret.stdout.decode("utf-8"))
+    if rep:
+        rep_arg = ["--reputation"]
+    else:
+        rep_arg = []
+    ret = subprocess.run(timeout + cli + ["trusted", "register-participant", account] + rep_arg + ["--xt-signer", account] + cli_tail, stdout=subprocess.PIPE)
+    print(ret.stdout.decode("utf-8"))
 
 def new_claim(account, vote, cid):
     global cli_tail
@@ -194,29 +199,35 @@ def run():
     if phase == 'REGISTERING':
         bal = balance(accounts, cid=cid)
         total = sum(bal)
-        print("****** money supply is " + str(total))
+        nonzero = sum(x > 0 for x in bal)
+        print("****** money supply is " + str(total) + " with " +str(nonzero) + " non-zero balances")
         f = open("bot-stats.csv", "a")
         f.write(str(len(accounts)) + ", " + str(total) + "\n")
         f.close()
         if total > 0:
-            n_newbies = min(ceil(len(accounts) / 4.0), MAX_POPULATION - len(accounts))
+            n_newbies = min(floor(len(accounts) / 4.0), MAX_POPULATION - len(accounts))
             print("*** adding " + str(n_newbies) + " newbies")
+            newbies = []
             if n_newbies > 0:
-                newbies = []
                 for n in range(0,n_newbies):
                     newbies.append(new_account(cid))
                 faucet(newbies)
                 await_block()
-                accounts = list_accounts(cid)
+                print("registering " + str(len(newbies)) + " newbies without reputation")
+                for p in newbies:
+                    print("registering newbie " + p)
+                    register_participant(p, cid, False)
 
-        print("registering " + str(len(accounts)) + " participants")
+        print("registering " + str(len(accounts)) + " participants with reputation")
         for p in accounts:
             print("registering " + p)
-            register_participant(p, cid)
+            register_participant(p, cid, total > 0)
         await_block()
+
     if phase == 'ASSIGNING':
         meetups = list_meetups(cid)
         print("****** Assigned " + str(len(meetups)) + " meetups")
+
     if phase == 'ATTESTING':
         meetups = list_meetups(cid)
         print("****** Performing " + str(len(meetups)) + " meetups")
@@ -244,7 +255,6 @@ def benchmark():
         run()
         await_block()
         next_phase()
-        await_block()
         print("waiting 30s to make sure the chain relay has synced")
         sleep(30)
 
