@@ -209,18 +209,29 @@ impl Stf {
                         let count = encointer_ceremonies::Module::<sgx_runtime::Runtime>::meetup_count((cid, c_index));
                         Some(count.encode())
                     },
-                    PublicGetter::ceremony_reward(cid) => {
+                    PublicGetter::ceremony_reward(_cid) => {
                         let reward = encointer_ceremonies::Module::<sgx_runtime::Runtime>::ceremony_reward();
                         Some(reward.encode())
                     },
-                    PublicGetter::location_tolerance(cid) => {
+                    PublicGetter::location_tolerance(_cid) => {
                         let tol = encointer_ceremonies::Module::<sgx_runtime::Runtime>::location_tolerance();
                         Some(tol.encode())
                     },
-                    PublicGetter::time_tolerance(cid)   => {
+                    PublicGetter::time_tolerance(_cid)   => {
                         let tol = encointer_ceremonies::Module::<sgx_runtime::Runtime>::time_tolerance();
                         Some(tol.encode())
-                    }              
+                    },  
+                    PublicGetter::scheduler_state(_cid)   => {
+                        let cindex = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
+                        let phase = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_phase();
+                        let number = if let Some(bn) = sp_io::storage::get(&storage_value_key("System", "Number")) {
+                            if let Ok(bnd) = BlockNumber::decode(&mut bn.as_slice()) 
+                                { bnd }
+                            else { 0 }
+                        } else { 0 };
+                        info!("scheduler state: cindex={}, phase={:?}, blocknumber={}", cindex, phase, number);
+                        Some((cindex, phase, number).encode())
+                    }  
                 }
             }
         )

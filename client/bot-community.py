@@ -26,7 +26,8 @@ geoid = Geod(ellps='WGS84')
 cli = ["./encointer-client", "-p", "9979", "-P", "2000"]
 timeout = ["timeout", "1s"]
 #MRENCLAVE = "3YM1AH5qdQAsh6BjYqDeYKQbuKgyDgNiSoFmqSUJTYvV" #v0.6.12
-MRENCLAVE = "6vbsq1atftUHz3oRrG4LQhxhWgARK2aaWAJePqzYQdWV" #v0.6.13
+#MRENCLAVE = "6vbsq1atftUHz3oRrG4LQhxhWgARK2aaWAJePqzYQdWV" #v0.6.13
+MRENCLAVE = "3oVnsGPi2iuTeoECdwg5zLWxHfpmUwWsapiYXREsmd9C" # working copy
 cli_tail = ["--mrenclave", MRENCLAVE]
 
 NUMBER_OF_LOCATIONS = 100
@@ -57,6 +58,11 @@ def next_phase():
 
 def get_phase():
     ret = subprocess.run(cli + ["get-phase"], stdout=subprocess.PIPE)
+    return ret.stdout.strip().decode("utf-8")
+
+def info(cid):
+    global cli_tail
+    ret = subprocess.run(cli + ["trusted", "info"] + cli_tail, stdout=subprocess.PIPE)
     return ret.stdout.strip().decode("utf-8")
 
 def list_accounts(cid):
@@ -193,9 +199,10 @@ def run():
     if not "--shard" in cli_tail:
         cli_tail += ["--shard", cid]
     phase = get_phase()
-    print("phase is " + phase)
+    print("phase (onchain) is " + phase)
     accounts = list_accounts(cid)
     print("number of known accounts: " + str(len(accounts)))
+    print(info(cid))
     if phase == 'REGISTERING':
         bal = balance(accounts, cid=cid)
         total = sum(bal)

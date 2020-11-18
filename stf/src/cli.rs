@@ -281,6 +281,17 @@ pub fn cmd<'a>(
                         } else { println!("  time tolerance: unknown nodecode"); }
                     } else { println!("  time tolerance: unknown"); };
 
+                    let top: TrustedOperation = PublicGetter::scheduler_state(shard)
+                        .into();
+                    if let Some(v) = perform_operation(matches, &top) {
+                        type SchedulerState = (CeremonyIndexType, CeremonyPhaseType, BlockNumber);
+                        if let Ok(vd) = SchedulerState::decode(&mut v.as_slice()) {
+                            println!("  ceremony index: {}", vd.0);
+                            println!("  ceremony phase: {:?}", vd.1);
+                            println!("  block number (sync height): {:?}", vd.2);
+                        } else { println!("  scheduler state: decoding error"); }
+                    } else { println!("  scheduler state: unknown"); };
+
                     Ok(())
                 }),
         )

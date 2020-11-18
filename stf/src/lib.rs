@@ -122,6 +122,7 @@ pub enum PublicGetter {
     ceremony_reward(CurrencyIdentifier),
     location_tolerance(CurrencyIdentifier),
     time_tolerance(CurrencyIdentifier),
+    scheduler_state(CurrencyIdentifier),
 }
 
 #[derive(Encode, Decode, Clone, Debug)]

@@ -24,7 +24,7 @@ use codec::{Decode, Encode};
 use log::*;
 use std::sync::mpsc::Sender as MpscSender;
 use substratee_stf::{Getter, ShardIdentifier};
-use substratee_worker_api::requests::*;
+use substratee_worker_api::requests::ClientRequest;
 use ws::{listen, CloseCode, Handler, Message, Result, Sender};
 
 use crate::enclave::api::{enclave_query_state, enclave_shielding_key};
@@ -60,8 +60,11 @@ pub fn start_ws_server(addr: String, worker: MpscSender<WsServerRequest>) {
                     self.worker
                         .send(WsServerRequest::new(self.client.clone(), req))
                         .unwrap();
+                },
+                Err(_) => {
+                    warn!("Could not decode request");
+                    self.client.send("Could not decode request").unwrap()
                 }
-                Err(_) => self.client.send("Could not decode request").unwrap(),
             }
             Ok(())
         }
