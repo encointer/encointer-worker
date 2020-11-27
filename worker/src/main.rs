@@ -40,7 +40,7 @@ use sp_core::{
     Pair,
 };
 use sp_keyring::AccountKeyring;
-use substrate_api_client::{utils::hexstr_to_vec, Api, XtStatus};
+use substrate_api_client::{utils::hexstr_to_vec, Api, XtStatus, GenericAddress};
 use my_node_runtime::{
     substratee_registry::ShardIdentifier, Event, Hash, Header, SignedBlock, UncheckedExtrinsic,
 };
@@ -601,7 +601,10 @@ fn ensure_account_has_funds(api: &mut Api<sr25519::Pair>, accountid: &AccountId3
         api.signer = Some(alice);
 
         println!("[+] bootstrap funding Enclave form Alice's funds");
-        let xt = api.balance_transfer(accountid.clone(), 1_000_000_000_000);
+        let xt = api.balance_transfer(
+            GenericAddress::Id(accountid.clone()), 
+            1_000_000_000_000
+        );
         let xt_hash = api
             .send_extrinsic(xt.hex_encode(), XtStatus::InBlock)
             .unwrap();

@@ -128,7 +128,7 @@ impl LightValidation {
         let block_num = *header.number();
 
         // Check that the header has been finalized
-        let voter_set = VoterSet::from_iter(validator_set.clone());
+        let voter_set = VoterSet::new(validator_set.clone().into_iter()).expect("VoterSet may not be empty");
         Self::verify_grandpa_proof::<Block>(
             grandpa_proof.unwrap(),
             block_hash,

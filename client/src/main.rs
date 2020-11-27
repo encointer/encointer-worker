@@ -27,7 +27,6 @@ extern crate chrono;
 use chrono::{DateTime, Utc};
 use std::time::{Duration, UNIX_EPOCH};
 
-use sc_keystore::Store;
 use sp_application_crypto::{ed25519, sr25519};
 use sp_keyring::AccountKeyring;
 use std::path::PathBuf;
@@ -52,7 +51,7 @@ use std::fs;
 use std::convert::TryFrom;
 use substrate_api_client::{
     compose_extrinsic, compose_extrinsic_offline,
-    events::EventsDecoder, extrinsic::xt_primitives::UncheckedExtrinsicV4,
+    events::EventsDecoder, extrinsic::xt_primitives::{UncheckedExtrinsicV4, GenericAddress},
     node_metadata::Metadata, utils::hexstr_to_vec, Api, XtStatus,
 };
 use my_node_runtime::{
@@ -69,6 +68,8 @@ use substratee_stf::{
     TrustedOperation, Getter
 };
 use substratee_worker_api::Api as WorkerApi;
+
+use substrate_client_keystore::LocalKeystore;
 
 type AccountPublic = <Signature as Verify>::Signer;
 const KEYSTORE_PATH: &str = "my_keystore";
@@ -131,8 +132,8 @@ fn main() {
             Command::new("new-account")
                 .description("generates a new account for the substraTEE chain")
                 .runner(|_args: &str, _matches: &ArgMatches<'_>| {
-                    let store = Store::open(PathBuf::from(&KEYSTORE_PATH), None).unwrap();
-                    let key: sr25519::AppPair = store.write().generate().unwrap();
+                    let store = LocalKeystore::open(PathBuf::from(&KEYSTORE_PATH), None).unwrap();
+                    let key: sr25519::AppPair = store.generate().unwrap();
                     drop(store);
                     println!("{}", key.public().to_ss58check());
                     Ok(())
@@ -142,10 +143,9 @@ fn main() {
             Command::new("list-accounts")
                 .description("lists all accounts in keystore for the substraTEE chain")
                 .runner(|_args: &str, _matches: &ArgMatches<'_>| {
-                    let store = Store::open(PathBuf::from(&KEYSTORE_PATH), None).unwrap();
+                    let store = LocalKeystore::open(PathBuf::from(&KEYSTORE_PATH), None).unwrap();
                     println!("sr25519 keys:");
                     for pubkey in store
-                        .read()
                         .public_keys::<sr25519::AppPublic>()
                         .unwrap()
                         .into_iter()
@@ -154,7 +154,6 @@ fn main() {
                     }
                     println!("ed25519 keys:");
                     for pubkey in store
-                        .read()
                         .public_keys::<ed25519::AppPublic>()
                         .unwrap()
                         .into_iter()
@@ -200,7 +199,10 @@ fn main() {
                         #[allow(clippy::redundant_clone)]
                         let xt: UncheckedExtrinsicV4<_> = compose_extrinsic_offline!(
                             _api.clone().signer.unwrap(),
-                            Call::Balances(BalancesCall::transfer(to.clone(), PREFUNDING_AMOUNT)),
+                            Call::Balances(BalancesCall::transfer(
+                                GenericAddress::Id(to.clone()), 
+                                PREFUNDING_AMOUNT
+                            )),
                             nonce,
                             Era::Immortal,
                             _api.genesis_hash,
@@ -282,7 +284,10 @@ fn main() {
                     info!("from ss58 is {}", from.public().to_ss58check());
                     info!("to ss58 is {}", to.to_ss58check());
                     let _api = api.set_signer(sr25519_core::Pair::from(from));
-                    let xt = _api.balance_transfer(to.clone(), amount);
+                    let xt = _api.balance_transfer(
+                        GenericAddress::Id(to.clone()), 
+                        amount
+                    );
                     let tx_hash = _api
                         .send_extrinsic(xt.hex_encode(), XtStatus::InBlock)
                         .unwrap();
@@ -753,10 +758,9 @@ fn get_pair_from_str(account: &str) -> sr25519::AppPair {
             info!("fetching from keystore at {}", &KEYSTORE_PATH);
             // open store without password protection
             let store =
-                Store::open(PathBuf::from(&KEYSTORE_PATH), None).expect("store should exist");
+                LocalKeystore::open(PathBuf::from(&KEYSTORE_PATH), None).expect("store should exist");
             info!("store opened");
             let _pair = store
-                .read()
                 .key_pair::<sr25519::AppPair>(
                     &sr25519::Public::from_ss58check(account).unwrap().into(),
                 )

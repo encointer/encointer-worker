@@ -21,7 +21,6 @@ use clap::{Arg, ArgMatches, AppSettings, value_t};
 use clap_nested::{Command, Commander, MultiCommand};
 use codec::{Decode, Encode};
 use log::*;
-use sc_keystore::Store;
 use sp_application_crypto::{ed25519, sr25519};
 use sp_core::{crypto::Ss58Codec, sr25519 as sr25519_core, Pair};
 use sp_runtime::traits::IdentifyAccount;
@@ -36,6 +35,7 @@ use encointer_scheduler::{CeremonyPhaseType, CeremonyIndexType};
 use hex;
 use substrate_api_client::Api;
 use sp_runtime::{MultiSignature, AccountId32};
+use substrate_client_keystore::LocalKeystore;
 
 type Moment = u64;
 
@@ -87,8 +87,8 @@ pub fn cmd<'a>(
             Command::new("new-account")
                 .description("generates a new incognito account for the given substraTEE shard")
                 .runner(|_args: &str, matches: &ArgMatches<'_>| {
-                    let store = Store::open(get_keystore_path(matches), None).unwrap();
-                    let key: sr25519::AppPair = store.write().generate().unwrap();
+                    let store = LocalKeystore::open(get_keystore_path(matches), None).unwrap();
+                    let key: sr25519::AppPair = store.generate().unwrap();
                     drop(store);
                     println!("{}", key.public().to_ss58check());
                     Ok(())
@@ -98,10 +98,9 @@ pub fn cmd<'a>(
             Command::new("list-accounts")
                 .description("lists all accounts in keystore for the substraTEE chain")
                 .runner(|_args: &str, matches: &ArgMatches<'_>| {
-                    let store = Store::open(get_keystore_path(matches), None).unwrap();
+                    let store = LocalKeystore::open(get_keystore_path(matches), None).unwrap();
                     info!("sr25519 keys:");
                     for pubkey in store
-                        .read()
                         .public_keys::<sr25519::AppPublic>()
                         .unwrap()
                         .into_iter()
@@ -110,7 +109,6 @@ pub fn cmd<'a>(
                     }
                     info!("ed25519 keys:");
                     for pubkey in store
-                        .read()
                         .public_keys::<ed25519::AppPublic>()
                         .unwrap()
                         .into_iter()
@@ -631,10 +629,9 @@ fn get_pair_from_str(matches: &ArgMatches<'_>, account: &str) -> sr25519::AppPai
         _ => {
             info!("fetching from keystore at {}", &KEYSTORE_PATH);
             // open store without password protection
-            let store = Store::open(get_keystore_path(matches), None).expect("store should exist");
+            let store = LocalKeystore::open(get_keystore_path(matches), None).expect("store should exist");
             info!("store opened");
             let _pair = store
-                .read()
                 .key_pair::<sr25519::AppPair>(
                     &sr25519::Public::from_ss58check(account).unwrap().into(),
                 )

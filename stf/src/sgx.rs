@@ -9,7 +9,7 @@ use metadata::StorageHasher;
 use sgx_runtime::{Runtime, BlockNumber};
 use sp_core::crypto::AccountId32;
 use sp_io::SgxExternalitiesTrait;
-use sp_runtime::traits::Dispatchable;
+use sp_runtime::{MultiAddress, traits::Dispatchable};
 use support::traits::UnfilteredDispatchable;
 use encointer_scheduler::{CeremonyPhaseType, OnCeremonyPhaseChange, CeremonyIndexType};
 use encointer_balances::{BalanceType, BalanceEntry};
@@ -111,7 +111,11 @@ impl Stf {
             match call.call {
                 TrustedCall::balance_transfer(from, to, cid, value) => {
                     let origin = sgx_runtime::Origin::signed(AccountId32::from(from));
-                    sgx_runtime::EncointerBalancesCall::<Runtime>::transfer(AccountId32::from(to), cid, value)
+                    sgx_runtime::EncointerBalancesCall::<Runtime>::transfer(
+                            MultiAddress::Id(AccountId32::from(to)), 
+                            cid, 
+                            value
+                        )
                         .dispatch_bypass_filter(origin)
                         .map_err(|_| StfError::Dispatch("balance_transfer".to_string()))?;
                     Ok(())

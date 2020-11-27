@@ -32,7 +32,7 @@
 NURL=ws://127.0.0.1
 NPORT=9979
 WURL=ws://127.0.0.1
-WPORT=2000
+WPORT=2001
 
 CLIENT="./../bin/encointer-client-teeproxy -u $NURL -p $NPORT -U $WURL -P $WPORT"
 
