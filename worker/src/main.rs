@@ -368,7 +368,7 @@ fn print_events(events: Events, _sender: Sender<String>) {
                         println!();
                     }
                     _ => {
-                        info!("Ignoring unsupported balances event");
+                        trace!("Ignoring unsupported balances event");
                     }
                 }
             }
@@ -419,12 +419,12 @@ fn print_events(events: Events, _sender: Sender<String>) {
                         println!();
                     }
                     _ => {
-                        info!("Ignoring unsupported substratee_registry event");
+                        trace!("Ignoring unsupported substratee_registry event");
                     }
                 }
             }
             _ => {
-                info!("Ignoring event {:?}", evr);
+                trace!("Ignoring event {:?}", evr);
             }
         }
     }
@@ -573,7 +573,7 @@ fn init_shard(shard: &ShardIdentifier) {
 // get the public signing key of the TEE
 fn enclave_account(eid: sgx_enclave_id_t) -> AccountId32 {
     let tee_public = enclave_signing_key(eid).unwrap();
-    info!(
+    trace!(
         "[+] Got ed25519 account of TEE = {}",
         tee_public.to_ss58check()
     );
