@@ -27,7 +27,7 @@ cli = ["./encointer-client", "-p", "9979", "-P", "2001"]
 timeout = ["timeout", "1s"]
 #MRENCLAVE = "3YM1AH5qdQAsh6BjYqDeYKQbuKgyDgNiSoFmqSUJTYvV" #v0.6.12
 #MRENCLAVE = "6vbsq1atftUHz3oRrG4LQhxhWgARK2aaWAJePqzYQdWV" #v0.6.13
-MRENCLAVE = "GHyQ6UJXdHW6jExviVq3xKXGAKgJSCRzdwxMpekxy7yB" # working copy
+MRENCLAVE = "776udihWmavKQyy41oMyJZfa4BbCr7Ewd9wWZjgb1gdx" # working copy
 cli_tail = ["--mrenclave", MRENCLAVE]
 
 NUMBER_OF_LOCATIONS = 100

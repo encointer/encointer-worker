@@ -39,9 +39,8 @@ use storage_proof::StorageProof;
 use crate::state::ScheduledChangeAtBlock;
 use crate::storage_proof::StorageProofChecker;
 use codec::{Decode, Encode};
-use core::iter::FromIterator;
 use finality_grandpa::voter_set::VoterSet;
-use log::{error, info};
+use log::*;
 use sp_finality_grandpa::{
     AuthorityId, AuthorityList, AuthorityWeight, ConsensusLog, ScheduledChange, SetId,
     GRANDPA_ENGINE_ID,
@@ -117,7 +116,7 @@ impl LightValidation {
         if grandpa_proof.is_none() {
             relay.last_finalized_block_header = header.clone();
             relay.unjustified_headers.push(header.hash());
-            info!(
+            debug!(
                 "Syncing finalized block without grandpa proof. Amount of unjustified headers: {}",
                 relay.unjustified_headers.len()
             );

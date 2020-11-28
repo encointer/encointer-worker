@@ -340,7 +340,7 @@ pub unsafe extern "C" fn sync_chain_relay(
     unchecked_extrinsic: *mut u8,
     unchecked_extrinsic_size: usize,
 ) -> sgx_status_t {
-    info!("Syncing chain relay!");
+    debug!("Syncing chain relay!");
     let mut blocks_slice = slice::from_raw_parts(blocks, blocks_size);
     let xt_slice = slice::from_raw_parts_mut(unchecked_extrinsic, unchecked_extrinsic_size);
 
@@ -466,7 +466,7 @@ fn handle_call_worker_xt(
 ) -> SgxResult<()> {
     let (call, request) = xt.function;
     let (shard, cyphertext) = (request.shard, request.cyphertext);
-    info!("Found CallWorker extrinsic in block: \nCall: {:?} \nRequest: \nshard: {}\ncyphertext: {:?}",
+    debug!("Found CallWorker extrinsic in block: \nCall: {:?} \nRequest: \nshard: {}\ncyphertext: {:?}",
         call,
         shard.encode().to_base58(),
         cyphertext

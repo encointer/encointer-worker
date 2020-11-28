@@ -9,7 +9,7 @@ use metadata::StorageHasher;
 use sgx_runtime::{Runtime, BlockNumber};
 use sp_core::crypto::AccountId32;
 use sp_io::SgxExternalitiesTrait;
-use sp_runtime::{MultiAddress, traits::Dispatchable};
+use sp_runtime::{MultiAddress};
 use support::traits::UnfilteredDispatchable;
 use encointer_scheduler::{CeremonyPhaseType, OnCeremonyPhaseChange, CeremonyIndexType};
 use encointer_balances::{BalanceType, BalanceEntry};
@@ -191,7 +191,6 @@ impl Stf {
                 },
                 Getter::public(g) => match g {
                     PublicGetter::total_issuance(cid) => {
-                        let c_index = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
                         let balance: BalanceEntry<BlockNumber> = encointer_balances::Module::<sgx_runtime::Runtime>::total_issuance_entry(cid);
                         Some(balance.encode())
                     },
@@ -270,7 +269,7 @@ impl Stf {
     }
 
     pub fn get_storage_hashes_to_update_for_getter(getter: &Getter) -> Vec<Vec<u8>> {
-        info!("No specific storage updates needed for getter. Returning those for on block: {:?}", getter);
+        debug!("No specific storage updates needed for getter. Returning those for on block: {:?}", getter);
         Self::storage_hashes_to_update_on_block()
     }
 

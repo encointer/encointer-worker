@@ -254,7 +254,7 @@ dependencies = [
  "finality-grandpa",
  "frame-system",
  "hash-db",
- "log 0.4.8 (git+https://github.com/mesalock-linux/log-sgx?rev=sgx_1.1.3)",
+ "log 0.4.8",
  "num-traits 0.2.14",
  "parity-scale-codec",
  "sgx_tstd",
@@ -408,10 +408,10 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 [[package]]
 name = "env_logger"
 version = "0.7.1"
-source = "git+https://github.com/mesalock-linux/env_logger-sgx?rev=sgx_1.1.3#839ef5144497dd61e7a5dc99ace41c561b576f20"
+source = "git+https://github.com/mesalock-linux/env_logger-sgx#839ef5144497dd61e7a5dc99ace41c561b576f20"
 dependencies = [
  "humantime",
- "log 0.4.8 (git+https://github.com/mesalock-linux/log-sgx)",
+ "log 0.4.8",
  "regex 1.3.1",
  "sgx_tstd",
  "termcolor",
@@ -811,15 +811,6 @@ dependencies = [
  "sha2 0.8.2",
  "subtle 2.3.0",
  "typenum",
-]
-
-[[package]]
-name = "log"
-version = "0.4.8"
-source = "git+https://github.com/mesalock-linux/log-sgx?rev=sgx_1.1.3#76b29e33718e0ce45587ce16af7abae1afc2f674"
-dependencies = [
- "cfg-if 0.1.10",
- "sgx_tstd",
 ]
 
 [[package]]
@@ -1551,7 +1542,7 @@ version = "0.16.0"
 source = "git+https://github.com/mesalock-linux/rustls?rev=sgx_1.1.3#d51a1bc80fddf5e18cf68688e81f49b5663ca7c9"
 dependencies = [
  "base64 0.10.1 (git+https://github.com/mesalock-linux/rust-base64-sgx)",
- "log 0.4.8 (git+https://github.com/mesalock-linux/log-sgx)",
+ "log 0.4.8",
  "ring",
  "sct",
  "sgx_tstd",
@@ -1688,10 +1679,9 @@ dependencies = [
 [[package]]
 name = "sgx-externalities"
 version = "0.2.0"
-source = "git+https://github.com/encointer/sgx-runtime?tag=v0.6.14#ba3c6ebab282fac48a8ecdaadb7065167c3d9d1b"
 dependencies = [
  "environmental",
- "log 0.4.8 (git+https://github.com/mesalock-linux/log-sgx?rev=sgx_1.1.3)",
+ "log 0.4.8",
  "sgx_serialize",
  "sgx_tstd",
  "sgx_types",
@@ -1700,7 +1690,6 @@ dependencies = [
 [[package]]
 name = "sgx-runtime"
 version = "0.6.14"
-source = "git+https://github.com/encointer/sgx-runtime?tag=v0.6.14#ba3c6ebab282fac48a8ecdaadb7065167c3d9d1b"
 dependencies = [
  "frame-executive",
  "frame-support",
@@ -2120,11 +2109,10 @@ dependencies = [
 [[package]]
 name = "sp-io"
 version = "2.0.0"
-source = "git+https://github.com/encointer/sgx-runtime?tag=v0.6.14#ba3c6ebab282fac48a8ecdaadb7065167c3d9d1b"
 dependencies = [
  "environmental",
  "hash-db",
- "log 0.4.8 (git+https://github.com/mesalock-linux/log-sgx?rev=sgx_1.1.3)",
+ "log 0.4.8",
  "parity-scale-codec",
  "sgx-externalities",
  "sgx_tstd",
@@ -2371,7 +2359,7 @@ dependencies = [
  "frame-metadata",
  "frame-support",
  "frame-system",
- "log 0.4.8 (git+https://github.com/mesalock-linux/log-sgx?rev=sgx_1.1.3)",
+ "log 0.4.8",
  "pallet-encointer-balances",
  "pallet-encointer-ceremonies",
  "pallet-encointer-currencies",
@@ -2401,7 +2389,7 @@ dependencies = [
  "ipfs-unixfs",
  "itertools 0.8.2",
  "lazy_static",
- "log 0.4.8 (git+https://github.com/mesalock-linux/log-sgx?rev=sgx_1.1.3)",
+ "log 0.4.8",
  "multibase",
  "num-bigint",
  "ofb",
