@@ -27,7 +27,7 @@ cli = ["./encointer-client", "-p", "9979", "-P", "2001"]
 timeout = ["timeout", "1s"]
 #MRENCLAVE = "3YM1AH5qdQAsh6BjYqDeYKQbuKgyDgNiSoFmqSUJTYvV" #v0.6.12
 #MRENCLAVE = "6vbsq1atftUHz3oRrG4LQhxhWgARK2aaWAJePqzYQdWV" #v0.6.13
-MRENCLAVE = "9vhs2EQfASNCe33mx1TKzFiWcPgXQhYC9RESqeMFY5Fq" # working copy
+MRENCLAVE = "GbmwYSynknnCHhB8cwW3xNgj6AzVvg9n9GRTMP4TF6Nr" # working copy
 cli_tail = ["--mrenclave", MRENCLAVE]
 
 NUMBER_OF_LOCATIONS = 100
@@ -244,6 +244,7 @@ def run():
             # retry without reputation in case an invalid proof was the reason for rejection
             print("retry registering without proof: " + p)            
             register_participant(p, cid, False)
+        await_block()
 
     if phase == 'ASSIGNING':
         meetups = list_meetups(cid)
