@@ -1,6 +1,7 @@
 use sgx_tstd as std;
 use std::collections::HashMap;
 use std::prelude::v1::*;
+use std::format;
 
 use codec::{Decode, Encode};
 use derive_more::Display;
@@ -127,9 +128,9 @@ impl Stf {
                         return Err(StfError::Dispatch("registering participants can only be done during REGISTERING phase".to_string()))
                     }
 
-                    sgx_runtime::EncointerCeremoniesCall::<Runtime>::register_participant(cid, proof)
+                    sgx_runtime::EncointerCeremoniesCall::<Runtime>::register_participant(cid, proof.clone())
                         .dispatch_bypass_filter(origin)
-                        .map_err(|_| StfError::Dispatch("ceremonies_register_participant".to_string()))?;
+                        .map_err(|_| StfError::Dispatch(format!("ceremonies_register_participant failed for {:?} cid {} proof {:?}", from, cid, proof)))?;
                     Ok(())
                 }
                 TrustedCall::ceremonies_register_attestations(from, attestations) => {

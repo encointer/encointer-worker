@@ -17,7 +17,7 @@
 
 use crate::{AccountId, ShardIdentifier, TrustedCall, TrustedGetter, PublicGetter, TrustedOperation, Attestation};
 use base58::{FromBase58, ToBase58};
-use clap::{Arg, ArgMatches, AppSettings, value_t};
+use clap::{Arg, ArgMatches, AppSettings};
 use clap_nested::{Command, Commander, MultiCommand};
 use codec::{Decode, Encode};
 use log::*;
@@ -324,11 +324,10 @@ pub fn cmd<'a>(
                         "send TrustedCall::register_participant for {}",
                         who.public(),
                     );
-                    let proof = match value_t!(matches, "reputation", bool).unwrap_or_default() {
-                        true => Some(prove_attendance(&accountid, shard, cindex - 1, &who)),
-                        false => None
-                    };
-                    debug!("reputation: {:?}", proof);
+                    let proof = if matches.is_present("reputation") {
+                        Some(prove_attendance(&accountid, shard, cindex - 1, &who))
+                    } else { None };
+                    println!("reputation: {:?}", proof);
                     let top: TrustedOperation = TrustedCall::ceremonies_register_participant(
                         sr25519_core::Public::from(who.public()),
                         shard, // for encointer we assume that every currency has its own shard. so shard == cid
