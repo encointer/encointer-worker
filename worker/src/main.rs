@@ -358,14 +358,13 @@ fn print_events(events: Events, _sender: Sender<String>) {
         debug!("Decoded: phase = {:?}, event = {:?}", evr.phase, evr.event);
         match &evr.event {
             Event::pallet_balances(be) => {
-                println!("[+] Received balances event");
+                info!("[+] Received balances event");
                 debug!("{:?}", be);
                 match &be {
                     pallet_balances::RawEvent::Transfer(transactor, dest, value) => {
-                        println!("    Transactor:  {:?}", transactor.to_ss58check());
-                        println!("    Destination: {:?}", dest.to_ss58check());
-                        println!("    Value:       {:?}", value);
-                        println!();
+                        debug!("    Transactor:  {:?}", transactor.to_ss58check());
+                        debug!("    Destination: {:?}", dest.to_ss58check());
+                        debug!("    Value:       {:?}", value);
                     }
                     _ => {
                         trace!("Ignoring unsupported balances event");
@@ -385,7 +384,6 @@ fn print_events(events: Events, _sender: Sender<String>) {
                             "    Registered URL: {:?}",
                             str::from_utf8(worker_url).unwrap()
                         );
-                        println!();
                     }
                     my_node_runtime::substratee_registry::RawEvent::Forwarded(request) => {
                         println!("[+] Received trusted call");
@@ -399,24 +397,21 @@ fn print_events(events: Events, _sender: Sender<String>) {
                         sender,
                         payload,
                     ) => {
-                        println!("[+] Received CallConfirmed event");
+                        info!("[+] Received CallConfirmed event");
                         debug!("    From:    {:?}", sender);
                         debug!("    Payload: {:?}", hex::encode(payload));
-                        println!();
                     }
                     my_node_runtime::substratee_registry::RawEvent::ShieldFunds(
                         incognito_account,
                     ) => {
-                        println!("[+] Received ShieldFunds event");
+                        info!("[+] Received ShieldFunds event");
                         debug!("    For:    {:?}", incognito_account);
-                        println!();
                     }
                     my_node_runtime::substratee_registry::RawEvent::UnshieldedFunds(
                         incognito_account,
                     ) => {
-                        println!("[+] Received UnshieldedFunds event");
+                        info!("[+] Received UnshieldedFunds event");
                         debug!("    For:    {:?}", incognito_account);
-                        println!();
                     }
                     _ => {
                         trace!("Ignoring unsupported substratee_registry event");
@@ -530,7 +525,7 @@ pub fn sync_chain_relay(
             );
         }
         for xt in extrinsics.into_iter() {
-            api.send_extrinsic(hex_encode(xt), XtStatus::InBlock)
+            api.send_extrinsic(hex_encode(xt), XtStatus::Ready)
                 .unwrap();
         }
 

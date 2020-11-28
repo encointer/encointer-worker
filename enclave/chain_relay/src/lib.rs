@@ -215,6 +215,9 @@ impl LightValidation {
             }
         });
 
+        // sort highest index first
+        found_xts.sort_by(|a, b| b.cmp(a));
+        
         let rm: Vec<OpaqueExtrinsic> = found_xts
             .into_iter()
             .map(|i| relay.verify_tx_inclusion.remove(i))
