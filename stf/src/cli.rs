@@ -356,7 +356,7 @@ pub fn cmd<'a>(
                     let arg_who = matches.value_of("accountid").unwrap();
                     let who = get_pair_from_str(matches, arg_who);
                     let (_mrenclave, shard) = get_identifiers(matches);
-                    println!(
+                    debug!(
                         "send TrustedGetter::get_registration for {}",
                         who.public()
                     );
@@ -368,7 +368,7 @@ pub fn cmd<'a>(
                         .into();
                     let part = perform_operation(matches, &top).unwrap();
                     let participant: ParticipantIndexType = Decode::decode(&mut part.as_slice()).unwrap();
-                    println!("Participant index: {:?}", participant);
+                    println!("{}", participant);
                     Ok(())
                 }),
         )
@@ -710,11 +710,12 @@ fn get_meetup_time(api: &Api<sr25519::Pair>, mlocation: Location) -> Option<Mome
         CeremonyPhaseType::REGISTERING => panic!("ceremony phase must be ASSIGNING or ATTESTING to request meetup location.")
     };
     debug!("attesting start at: {}", attesting_start);
-    
-    let t = attesting_start + ONE_DAY/2 
-    - (mlon * (ONE_DAY as f64) / 360.0) as Moment;
-    debug!("meetup time: {}", t);
-    Some(t)
+    let mtime = (
+        (attesting_start + ONE_DAY/2) as i64
+        - (mlon * (ONE_DAY as f64) / 360.0) as i64
+        ) as Moment; 
+    debug!("meetup time at lon {}: {:?}", mlon, mtime);
+    Some(mtime)
 }
 
 fn sign_claim(matches: &ArgMatches<'_>, claim: ClaimOfAttendance<AccountId, Moment>, account_str: &str) -> Attestation<Signature, AccountId, Moment> {

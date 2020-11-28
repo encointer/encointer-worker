@@ -50,8 +50,8 @@ pub fn start_ws_server(addr: String, worker: MpscSender<WsServerRequest>) {
 
     impl Handler for Server {
         fn on_message(&mut self, msg: Message) -> Result<()> {
-            info!(
-                "[WS Server] Forwarding message to worker event loop: {:?}",
+            debug!(
+                "Forwarding message to worker event loop: {:?}",
                 msg
             );
 
@@ -70,7 +70,7 @@ pub fn start_ws_server(addr: String, worker: MpscSender<WsServerRequest>) {
         }
 
         fn on_close(&mut self, code: CloseCode, reason: &str) {
-            info!("[WS Server] WebSocket closing for ({:?}) {}", code, reason);
+            debug!("WebSocket closing for ({:?}) {}", code, reason);
         }
     }
     // Server thread
@@ -89,7 +89,7 @@ pub fn handle_request(
     eid: sgx_enclave_id_t,
     mu_ra_port: String,
 ) -> Result<()> {
-    info!("     [WS Server] Got message '{:?}'. ", req);
+    info!("Got message '{:?}'. ", req.request);
     let answer = match req.request {
         ClientRequest::PubKeyWorker => get_pubkey(eid),
         ClientRequest::MuRaPortWorker => Message::text(mu_ra_port),
@@ -100,7 +100,7 @@ pub fn handle_request(
 }
 
 fn get_stf_state(eid: sgx_enclave_id_t, getter: Getter, shard: ShardIdentifier) -> Message {
-    info!("     [WS Server] Query state");
+    debug!("Query state");
     let value = match enclave_query_state(eid, getter.encode(), shard.encode()) {
         Ok(val) => Some(val),
         Err(_) => {
@@ -115,7 +115,7 @@ fn get_stf_state(eid: sgx_enclave_id_t, getter: Getter, shard: ShardIdentifier) 
 
 fn get_pubkey(eid: sgx_enclave_id_t) -> Message {
     let rsa_pubkey = enclave_shielding_key(eid).unwrap();
-    debug!("     [WS Server] RSA pubkey {:?}\n", rsa_pubkey);
+    debug!("RSA pubkey {:?}\n", rsa_pubkey);
 
     let rsa_pubkey_json = serde_json::to_string(&rsa_pubkey).unwrap();
     Message::text(rsa_pubkey_json)

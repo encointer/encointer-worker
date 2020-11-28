@@ -23,11 +23,11 @@ import os
 geoid = Geod(ellps='WGS84')
 
 #cli = ["./encointer-client", "-u", "wss://cantillon.encointer.org", "-p", "443", "-U", "wss://substratee03.scs.ch", "-P", "443"]
-cli = ["./encointer-client", "-p", "9979", "-P", "2000"]
+cli = ["./encointer-client", "-p", "9979", "-P", "2001"]
 timeout = ["timeout", "1s"]
 #MRENCLAVE = "3YM1AH5qdQAsh6BjYqDeYKQbuKgyDgNiSoFmqSUJTYvV" #v0.6.12
 #MRENCLAVE = "6vbsq1atftUHz3oRrG4LQhxhWgARK2aaWAJePqzYQdWV" #v0.6.13
-MRENCLAVE = "3oVnsGPi2iuTeoECdwg5zLWxHfpmUwWsapiYXREsmd9C" # working copy
+MRENCLAVE = "GHyQ6UJXdHW6jExviVq3xKXGAKgJSCRzdwxMpekxy7yB" # working copy
 cli_tail = ["--mrenclave", MRENCLAVE]
 
 NUMBER_OF_LOCATIONS = 100
@@ -120,18 +120,22 @@ def sign_claim(account, claim, cid):
     ret = subprocess.run(cli + ["trusted", "sign-claim", account, claim] + cli_tail, stdout=subprocess.PIPE)
     return ret.stdout.decode("utf-8").strip()
 
+def get_registration(account, cid):
+    global cli_tail
+    ret = subprocess.run(cli + ["trusted", "get-registration", account] + cli_tail, stdout=subprocess.PIPE)
+    return int(ret.stdout.decode("utf-8").strip())
+
 def list_meetups(cid):
     global cli_tail
     accounts = list_accounts(cid)
     meetups = {}
     for account in accounts:
-        print("checking assignement for " + account)
         ret = subprocess.run(cli + ["trusted", "get-meetup", account] + cli_tail, stdout=subprocess.PIPE)
         mindex = ret.stdout.decode("utf-8")
         if mindex == '':
             continue
         mindex = int(mindex) 
-        print("mindex=" + str(mindex))           
+        print("meetup index for " + account + ": " + str(mindex))           
         if not mindex in meetups.keys():
             meetups[mindex] = []
         meetups[mindex].append(account)
@@ -212,7 +216,7 @@ def run():
         f.write(str(len(accounts)) + ", " + str(total) + "\n")
         f.close()
         if total > 0:
-            n_newbies = min(floor(len(accounts) / 4.0), MAX_POPULATION - len(accounts))
+            n_newbies = min(floor(nonzero / 4.0), MAX_POPULATION - len(accounts))
             print("*** adding " + str(n_newbies) + " newbies")
             newbies = []
             if n_newbies > 0:
@@ -220,16 +224,26 @@ def run():
                     newbies.append(new_account(cid))
                 faucet(newbies)
                 await_block()
-                print("registering " + str(len(newbies)) + " newbies without reputation")
-                for p in newbies:
-                    print("registering newbie " + p)
-                    register_participant(p, cid, False)
-
-        print("registering " + str(len(accounts)) + " participants with reputation")
+                accounts = list_accounts(cid)
+        # we'll attempt to register everybody with reputation and retry those who fail later
+        # this is faster because we can batch registrations without waiting for queries
+        print("registering " + str(len(accounts)) + " participants with proof")
         for p in accounts:
             print("registering " + p)
             register_participant(p, cid, total > 0)
         await_block()
+        print("wait before verifying registrations")
+        sleep(30)
+        retry = []
+        for p in accounts:
+            if get_registration(p, cid) > 0:
+                print(p + " has been successfully registered")
+            else:
+               retry.append(p) 
+        for p in retry: 
+            # retry without reputation in case an invalid proof was the reason for rejection
+            print("retry registering without proof: " + p)            
+            register_participant(p, cid, False)
 
     if phase == 'ASSIGNING':
         meetups = list_meetups(cid)
