@@ -1679,6 +1679,7 @@ dependencies = [
 [[package]]
 name = "sgx-externalities"
 version = "0.2.0"
+source = "git+https://github.com/encointer/sgx-runtime?tag=v0.6.15#bb817434b548571db99a5a9581333ba793ce05ec"
 dependencies = [
  "environmental",
  "log 0.4.8",
@@ -1689,7 +1690,8 @@ dependencies = [
 
 [[package]]
 name = "sgx-runtime"
-version = "0.6.14"
+version = "0.6.15"
+source = "git+https://github.com/encointer/sgx-runtime?tag=v0.6.15#bb817434b548571db99a5a9581333ba793ce05ec"
 dependencies = [
  "frame-executive",
  "frame-support",
@@ -2109,6 +2111,7 @@ dependencies = [
 [[package]]
 name = "sp-io"
 version = "2.0.0"
+source = "git+https://github.com/encointer/sgx-runtime?tag=v0.6.15#bb817434b548571db99a5a9581333ba793ce05ec"
 dependencies = [
  "environmental",
  "hash-db",
@@ -2310,8 +2313,8 @@ dependencies = [
 
 [[package]]
 name = "substrate-api-client"
-version = "0.4.12"
-source = "git+https://github.com/scs/substrate-api-client?tag=v0.4.12#34781282daaa07a5b573569a4575c5ab918c9ce5"
+version = "0.4.13"
+source = "git+https://github.com/scs/substrate-api-client?tag=v0.4.13#a6e16167c2b575475ef8c927aea3a2d0621ce2f9"
 dependencies = [
  "frame-metadata",
  "frame-support",
@@ -2376,7 +2379,7 @@ dependencies = [
 
 [[package]]
 name = "substratee-worker-enclave"
-version = "0.6.14"
+version = "0.6.15"
 dependencies = [
  "aes",
  "base64 0.10.1 (git+https://github.com/mesalock-linux/rust-base64-sgx?rev=sgx_1.1.3)",

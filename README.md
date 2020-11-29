@@ -35,3 +35,35 @@ Run these with
 ```
 substraTEE-worker/bin$ ./substratee-worker test_enclave --all
 ```
+
+### End-to-end test with benchmarking
+
+Including cleanup between runs:
+
+run node
+```
+./target/release/encointer-node-teeproxy purge-chain --dev
+./target/release/encointer-node-teeproxy --dev --ws-port 9979
+```
+
+run worker
+
+```
+rm -rf shards/ chain_relay_db.bin
+./encointer-worker -r 2002 -p 9979 -w 2001 run 2>&1 | tee worker.log
+```
+
+wait until you see the worker synching a few blocks. then check MRENCLAVE and update bot-community.py constants accordingly
+
+```
+./encointer-client -p 9979 list-workers
+```
+
+now bootstrap a new bot community
+
+```
+./bot-community.py init
+./bot-community.py benchmark
+```
+
+now you should see the community growing from 10 to hundreds, increasing with every ceremony

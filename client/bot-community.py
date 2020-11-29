@@ -25,9 +25,7 @@ geoid = Geod(ellps='WGS84')
 #cli = ["./encointer-client", "-u", "wss://cantillon.encointer.org", "-p", "443", "-U", "wss://substratee03.scs.ch", "-P", "443"]
 cli = ["./encointer-client", "-p", "9979", "-P", "2001"]
 timeout = ["timeout", "1s"]
-#MRENCLAVE = "3YM1AH5qdQAsh6BjYqDeYKQbuKgyDgNiSoFmqSUJTYvV" #v0.6.12
-#MRENCLAVE = "6vbsq1atftUHz3oRrG4LQhxhWgARK2aaWAJePqzYQdWV" #v0.6.13
-MRENCLAVE = "GbmwYSynknnCHhB8cwW3xNgj6AzVvg9n9GRTMP4TF6Nr" # working copy
+MRENCLAVE = "Cvm3dhgjWiExYnneL1YQ9fRHLRhEpQattgDXg6JUjMX" # v0.6.15
 cli_tail = ["--mrenclave", MRENCLAVE]
 
 NUMBER_OF_LOCATIONS = 100

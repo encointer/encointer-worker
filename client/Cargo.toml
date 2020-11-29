@@ -1,6 +1,6 @@
 [package]
 name = "encointer-client-teeproxy"
-version = "0.6.14"
+version = "0.6.15"
 authors = ["Supercomputing Systems AG <info@scs.ch>"]
 edition = "2018"
 
@@ -46,11 +46,11 @@ package = "pallet-encointer-balances"
 
 [dependencies.substrate-api-client]
 git = "https://github.com/scs/substrate-api-client"
-tag = "v0.4.12"
+tag = "v0.4.13"
 
 [dependencies.substrate-client-keystore]
 git = "https://github.com/scs/substrate-api-client"
-tag = "v0.4.12"
+tag = "v0.4.13"
 
 [dependencies.serde]
 features = ["derive"]
@@ -87,7 +87,7 @@ default-features=false
 
 [dependencies.my-node-runtime]
 git = "https://github.com/encointer/encointer-node"
-branch = "sgx-master"
+tag = "v0.3.7-tee"
 package = "encointer-node-teeproxy-runtime"
 
 [dependencies.substratee-stf]

@@ -385,13 +385,8 @@ fn print_events(events: Events, _sender: Sender<String>) {
                             str::from_utf8(worker_url).unwrap()
                         );
                     }
-                    my_node_runtime::substratee_registry::RawEvent::Forwarded(request) => {
-                        println!("[+] Received trusted call");
-                        trace!(
-                            "    Request: \n  shard: {}\n  cyphertext: {:?}",
-                            request.shard.encode().to_base58(),
-                            request.cyphertext.clone()
-                        );
+                    my_node_runtime::substratee_registry::RawEvent::Forwarded(shard) => {
+                        println!("[+] Received trusted call for shard {}", shard.encode().to_base58());
                     }
                     my_node_runtime::substratee_registry::RawEvent::CallConfirmed(
                         sender,
@@ -532,6 +527,7 @@ pub fn sync_chain_relay(
             api.subscribe_events(events_in);
             let _ = events_out.recv().unwrap();
             let _ = events_out.recv().unwrap();
+            // FIXME: we should unsubscribe here or the thread will throw a SendError because the channel is destroyed
         }
 
         i += chunk.len();

@@ -673,9 +673,8 @@ fn listen(matches: &ArgMatches<'_>) {
                                 my_node_runtime::substratee_registry::RawEvent::UpdatedIpfsHash(shard, idx, ipfs_hash) => {
                                     println!("UpdatedIpfsHash for shard {}, worker index {}, ipfs# {:?}", shard.encode().to_base58(), idx, ipfs_hash);
                                 },
-                                my_node_runtime::substratee_registry::RawEvent::Forwarded(request) => {
-                                    let request_hash = hex::encode(request.cyphertext.clone());
-                                    println!("Forwarded request for shard {}: {}", request.shard.encode().to_base58(), request_hash);
+                                my_node_runtime::substratee_registry::RawEvent::Forwarded(shard) => {
+                                    println!("Forwarded request for shard {}", shard.encode().to_base58());
                                 },
                                 my_node_runtime::substratee_registry::RawEvent::CallConfirmed(accountid, call_hash) => {
                                     println!("CallConfirmed from {} with hash {:?}", accountid, call_hash);
