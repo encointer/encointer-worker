@@ -523,10 +523,15 @@ pub fn sync_chain_relay(
                 "Sync chain relay: Enclave wants to send {} extrinsics",
                 extrinsics.len()
             );
-        }
-        for xt in extrinsics.into_iter() {
-            api.send_extrinsic(hex_encode(xt), XtStatus::Ready)
-                .unwrap();
+            for xt in extrinsics.into_iter() {
+                api.send_extrinsic(hex_encode(xt), XtStatus::Ready)
+                    .unwrap();
+            } 
+            // await next block to avoid #37
+            let (events_in, events_out) = channel();
+            api.subscribe_events(events_in);
+            let _ = events_out.recv().unwrap();
+            let _ = events_out.recv().unwrap();
         }
 
         i += chunk.len();
