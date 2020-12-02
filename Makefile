@@ -108,7 +108,7 @@ STF_SRC_Path := stf
 Client_Rust_Flags := $(CARGO_TARGET)
 Client_SRC_Files := $(shell find $(Client_SRC_Path)/ -type f -name '*.rs') $(shell find $(STF_SRC_Path)/ -type f -name '*.rs') $(shell find $(Client_SRC_Path)/ -type f -name 'Cargo.toml')
 Client_Include_Paths := -I ./$(Client_SRC_Path) -I./include -I$(SGX_SDK)/include -I$(CUSTOM_EDL_PATH)
-Client_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(Worker_Include_Paths)
+Client_C_Flags := $(SGX_COMMON_CFLAGS) -fPIC -Wno-attributes $(Client_Include_Paths)
 
 Client_Rust_Path := target/$(OUTPUT_PATH)
 Client_Path := bin
