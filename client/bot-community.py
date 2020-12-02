@@ -14,7 +14,7 @@ import subprocess
 import geojson
 
 from math import sqrt, ceil, floor
-from random_word import RandomWords
+#from random_word import RandomWords
 from pyproj import Geod
 from shutil import copy
 from time import sleep
@@ -23,7 +23,7 @@ import os
 geoid = Geod(ellps='WGS84')
 
 #cli = ["./encointer-client", "-u", "wss://cantillon.encointer.org", "-p", "443", "-U", "wss://substratee03.scs.ch", "-P", "443"]
-cli = ["./encointer-client", "-p", "9979", "-P", "2001"]
+cli = ["./encointer-client"]
 timeout = ["timeout", "1s"]
 MRENCLAVE = "Cvm3dhgjWiExYnneL1YQ9fRHLRhEpQattgDXg6JUjMX" # v0.6.15
 cli_tail = ["--mrenclave", MRENCLAVE]
