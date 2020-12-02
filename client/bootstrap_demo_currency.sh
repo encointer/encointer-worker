@@ -34,7 +34,7 @@ NPORT=9979
 WURL=ws://127.0.0.1
 WPORT=2001
 
-CLIENT="./../bin/encointer-client-teeproxy -u $NURL -p $NPORT -U $WURL -P $WPORT"
+CLIENT="./encointer-client -u $NURL -p $NPORT -U $WURL -P $WPORT"
 
 echo "Using node address: $NURL:$NPORT"
 echo "Using worker address: $WURL:$WPORT"
@@ -71,6 +71,7 @@ fi
 read MRENCLAVE <<< $($CLIENT list-workers | awk '/  MRENCLAVE: / { print $2 }')
 #cid=7eLSZLSMShw4ju9GvuMmoVgeZxZimtvsGTSvLEdvcRqQ
 #MRENCLAVE=6AkpQeSLGSwESvKMiygJzDTLHXvnwBG9c8Q8FV9LiDuN
+MRENCLAVE=7ZUyKfVzVMH5S2hDSZ7x5fpHjmx8FMBbgyGKbYymbCbx
 
 echo "  MRENCLAVE = ${MRENCLAVE}"
 
@@ -133,9 +134,9 @@ witness3_1=$($CLIENT trusted sign-claim $account3 $claim1 --mrenclave $MRENCLAVE
 witness3_2=$($CLIENT trusted sign-claim $account3 $claim2 --mrenclave $MRENCLAVE --shard $cid)
 
 echo "*** send witnesses to chain"
-$CLIENT trusted register-attestations $account1 $witness2_1 $witness3_1 --mrenclave $MRENCLAVE --shard $cid 
-$CLIENT trusted register-attestations $account2 $witness1_2 $witness3_2 --mrenclave $MRENCLAVE --shard $cid 
-$CLIENT trusted register-attestations $account3 $witness1_3 $witness2_3 --mrenclave $MRENCLAVE --shard $cid 
+timeout 10s $CLIENT trusted register-attestations $account1 $witness2_1 $witness3_1 --mrenclave $MRENCLAVE --shard $cid 
+timeout 10s $CLIENT trusted register-attestations $account2 $witness1_2 $witness3_2 --mrenclave $MRENCLAVE --shard $cid 
+timeout 10s $CLIENT trusted register-attestations $account3 $witness1_3 $witness2_3 --mrenclave $MRENCLAVE --shard $cid 
 
 
 $CLIENT trusted get-attestations $account1 --mrenclave $MRENCLAVE --shard $cid 

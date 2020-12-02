@@ -76,11 +76,16 @@ pub fn start_ws_server(addr: String, worker: MpscSender<WsServerRequest>) {
     // Server thread
     info!("Starting WebSocket server on {}", addr);
     thread::spawn(move || {
-        listen(addr, |out| Server {
+        match listen(addr.clone(), |out| Server {
             client: out,
             worker: worker.clone(),
-        })
-        .unwrap()
+        }) {
+            Ok(_) => (),
+            Err(e) => {
+                error!("error starting worker api server on {}: {}", addr, e);
+                return
+            },
+        };
     });
 }
 
