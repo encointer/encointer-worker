@@ -171,7 +171,7 @@ impl Stf {
                         let balance: BalanceEntry<BlockNumber> = encointer_balances::Module::<sgx_runtime::Runtime>::balance_entry(cid, AccountId32::from(who));
                         Some(balance.encode())
                     },
-                    TrustedGetter::registration(who, cid) => {
+                    TrustedGetter::participant_index(who, cid) => {
                         let c_index = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
                         let part: ParticipantIndexType = encointer_ceremonies::Module::<sgx_runtime::Runtime>::participant_index((cid, c_index), AccountId32::from(who));
                         Some(part.encode())

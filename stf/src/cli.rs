@@ -359,7 +359,7 @@ pub fn cmd<'a>(
                         "send TrustedGetter::get_registration for {}",
                         who.public()
                     );
-                    let top: TrustedOperation = TrustedGetter::registration(
+                    let top: TrustedOperation = TrustedGetter::participant_index(
                         sr25519_core::Public::from(who.public()),
                         shard, // for encointer we assume that every currency has its own shard. so shard == cid
                         )
