@@ -1,13 +1,8 @@
 # substraTEE-worker
 
-![badge](https://img.shields.io/badge/substrate-2.0.0-success)
-
 SubstraTEE worker for SubstraTEE node
 
 This is part of [substraTEE](https://github.com/scs/substraTEE)
-
-## Development environment
-**Supports Rust nightly-2020-04-07**
 
 ## Build and Run
 Please see our [SubstraTEE Book](https://www.substratee.com/howto_worker.html) to learn how to build and run this.
