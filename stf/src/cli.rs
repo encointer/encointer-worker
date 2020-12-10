@@ -385,23 +385,10 @@ pub fn cmd<'a>(
                     )
                 })
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
-                    let arg_who = matches.value_of("accountid").unwrap();
-                    // println!("arg_who = {:?}", arg_who);
-                    let who = get_pair_from_str(matches, arg_who);
-
-                    let (_mrenclave, shard) = get_identifiers(matches);
-                    let top: TrustedOperation = TrustedGetter::meetup_index_and_location(who.public().into(), shard)
-                        .sign(&sr25519_core::Pair::from(who.clone()))
-                        .into();
-
-                    let res = perform_operation(matches, &top).unwrap();
-                    let (mindex, mlocation): (MeetupIndexType, Option<Location>) = Decode::decode(&mut res.as_slice()).unwrap();
-                    if mindex==0 || mlocation.is_none() {
-                        panic!("participant {} has not been assigned to a meetup", arg_who);
-                    };
-                    info!("got mindex: {:?}", mindex);
-                    info!("got location: {:?}", mlocation);
-                    println!("{}", mindex);
+                    if let Err(e) = get_meetup_index_and_location(
+                        perform_operation, matches) {
+                        panic!(e)
+                    }
                     Ok(())
                 }),
         )
@@ -514,20 +501,16 @@ pub fn cmd<'a>(
                         .unwrap();
 
                     let (_mrenclave, shard) = get_identifiers(matches);
-                    let top: TrustedOperation = TrustedGetter::meetup_index_and_location(who.public().into(), shard)
-                        .sign(&sr25519_core::Pair::from(who.clone()))
-                        .into();
-
-                    let res = perform_operation(matches, &top).unwrap();
-                    let (mindex, mlocation): (MeetupIndexType, Option<Location>) = Decode::decode(&mut res.as_slice()).unwrap();
-                    if mindex==0 || mlocation.is_none() {
-                        panic!("participant {} has not been assigned to a meetup", arg_who);
+                    let (mindex, mlocation) = match get_meetup_index_and_location(
+                        perform_operation,
+                        matches,
+                    ) {
+                        Ok((m, l)) => (m, l),
+                        Err(e) => panic!(e),
                     };
-                    info!("got mindex: {:?}", mindex);
-                    info!("got location: {:?}", mlocation);
 
                     let api = get_chain_api(matches);
-                    let mtime = get_meetup_time(&api, mlocation.unwrap());
+                    let mtime = get_meetup_time(&api, mlocation);
                     info!("meetup time: {:?}", mtime);
                     let cindex = api.get_storage_value("EncointerScheduler", "CurrentCeremonyIndex", None)
                         .unwrap();
@@ -538,7 +521,7 @@ pub fn cmd<'a>(
                         ceremony_index: cindex,
                         // ceremony_index: Default::default(),
                         meetup_index: mindex,
-                        location: mlocation.unwrap(),
+                        location: mlocation,
                         timestamp: mtime.unwrap(),
                         number_of_participants_confirmed: n_participants,
                     };
@@ -681,6 +664,44 @@ fn get_current_phase(api: &Api<sr25519::Pair>) -> CeremonyPhaseType {
     api.get_storage_value("EncointerScheduler", "CurrentPhase", None)
         .or(Some(CeremonyPhaseType::default()))
         .unwrap()
+}
+
+fn get_meetup_index_and_location<'a>(
+    perform_operation: &'a dyn Fn(&ArgMatches<'_>, &TrustedOperation)  -> Option<Vec<u8>>,
+    matches: &ArgMatches<'_>) -> Result<(MeetupIndexType, Location), String> {
+    let arg_who = matches.value_of("accountid").unwrap();
+    // println!("arg_who = {:?}", arg_who);
+    let who = get_pair_from_str(matches, arg_who);
+
+    let (_mrenclave, shard) = get_identifiers(matches);
+    let top: TrustedOperation = TrustedGetter::meetup_index(who.public().into(), shard)
+        .sign(&sr25519_core::Pair::from(who.clone()))
+        .into();
+
+    let res = perform_operation(matches, &top).unwrap();
+    let m_index: MeetupIndexType = Decode::decode(&mut res.as_slice()).unwrap();
+    if m_index == 0 {
+        return Err(format!("participant {} has not been assigned to a meetup. Meetup Index is 0", arg_who));
+    }
+
+    let api = get_chain_api(matches);
+    let m_location = get_meetup_location(&api, m_index);
+
+    if m_location.is_none() {
+        return Err(format!("participant {} has not been assigned to a meetup", arg_who));
+    };
+    info!("got location: {:?}", m_location);
+    println!("{}", m_index);
+    return Ok((m_index, m_location.unwrap()));
+}
+
+fn get_meetup_location(api: &Api<sr25519::Pair>, m_index: MeetupIndexType) -> Option<Location> {
+    return api.get_storage_value(
+        "EncointerCurrencies",
+        "Locations",
+        None,
+    )
+        .map(|locs: Vec<Location>| locs[m_index as usize]);
 }
 
 fn get_meetup_time(api: &Api<sr25519::Pair>, mlocation: Location) -> Option<Moment> {
