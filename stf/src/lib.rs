@@ -168,18 +168,20 @@ impl TrustedCall {
 #[allow(non_camel_case_types)]
 pub enum TrustedGetter {
     balance(AccountId, CurrencyIdentifier),
-    registration(AccountId, CurrencyIdentifier),
-    meetup_index_and_location(AccountId, CurrencyIdentifier),
+    participant_index(AccountId, CurrencyIdentifier),
+    meetup_index(AccountId, CurrencyIdentifier),
     attestations(AccountId, CurrencyIdentifier),
+    meetup_registry(AccountId, CurrencyIdentifier),
 }
 
 impl TrustedGetter {
     pub fn account(&self) -> &AccountId {
         match self {
             TrustedGetter::balance(account, _) => account,
-            TrustedGetter::registration(account, _) => account,
-            TrustedGetter::meetup_index_and_location(account, _) => account,
+            TrustedGetter::participant_index(account, _) => account,
+            TrustedGetter::meetup_index(account, _) => account,
             TrustedGetter::attestations(account, _) => account,
+            TrustedGetter::meetup_registry(account, _) => account,
         }
     }
 

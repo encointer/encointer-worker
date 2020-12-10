@@ -14,7 +14,7 @@ use sp_runtime::{MultiAddress};
 use support::traits::UnfilteredDispatchable;
 use encointer_scheduler::{CeremonyPhaseType, OnCeremonyPhaseChange, CeremonyIndexType};
 use encointer_balances::{BalanceType, BalanceEntry};
-use encointer_currencies::{CurrencyIdentifier, Location};
+use encointer_currencies::{CurrencyIdentifier};
 use encointer_ceremonies::{ParticipantIndexType, MeetupIndexType};
 use sgx_runtime::Moment;
 
@@ -171,23 +171,27 @@ impl Stf {
                         let balance: BalanceEntry<BlockNumber> = encointer_balances::Module::<sgx_runtime::Runtime>::balance_entry(cid, AccountId32::from(who));
                         Some(balance.encode())
                     },
-                    TrustedGetter::registration(who, cid) => {
+                    TrustedGetter::participant_index(who, cid) => {
                         let c_index = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
                         let part: ParticipantIndexType = encointer_ceremonies::Module::<sgx_runtime::Runtime>::participant_index((cid, c_index), AccountId32::from(who));
                         Some(part.encode())
                     }
-                    TrustedGetter::meetup_index_and_location(who, cid) => {
+                    TrustedGetter::meetup_index(who, cid) => {
                         let c_index = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
                         let meetup_index: MeetupIndexType = encointer_ceremonies::Module::<sgx_runtime::Runtime>::meetup_index((cid, c_index), AccountId32::from(who));
-                        let location: Option<Location> = encointer_ceremonies::Module::<sgx_runtime::Runtime>::get_meetup_location(&cid, meetup_index);
-                        let enc = (meetup_index, location).encode();
-                        Some(enc)
+                        Some(meetup_index.encode())
                     }
                     TrustedGetter::attestations(who, cid) => {
                         let c_index = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
                         let attestation_index = encointer_ceremonies::Module::<sgx_runtime::Runtime>::attestation_index((cid, c_index), AccountId32::from(who));
                         let attestations = encointer_ceremonies::Module::<sgx_runtime::Runtime>::attestation_registry((cid, c_index), attestation_index);
                         Some(attestations.encode())
+                    }
+                    TrustedGetter::meetup_registry(who, cid) => {
+                        let c_index = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
+                        let meetup_index: MeetupIndexType = encointer_ceremonies::Module::<sgx_runtime::Runtime>::meetup_index((cid, c_index), AccountId32::from(who));
+                        let registry: Vec<AccountId32> = encointer_ceremonies::Module::<sgx_runtime::Runtime>::meetup_registry((cid, c_index), meetup_index);
+                        Some(registry.encode())
                     }
                 },
                 Getter::public(g) => match g {
