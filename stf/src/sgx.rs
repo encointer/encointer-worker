@@ -14,7 +14,7 @@ use sp_runtime::{MultiAddress};
 use support::traits::UnfilteredDispatchable;
 use encointer_scheduler::{CeremonyPhaseType, OnCeremonyPhaseChange, CeremonyIndexType};
 use encointer_balances::{BalanceType, BalanceEntry};
-use encointer_currencies::{CurrencyIdentifier, Location};
+use encointer_currencies::{CurrencyIdentifier};
 use encointer_ceremonies::{ParticipantIndexType, MeetupIndexType};
 use sgx_runtime::Moment;
 
@@ -186,6 +186,12 @@ impl Stf {
                         let attestation_index = encointer_ceremonies::Module::<sgx_runtime::Runtime>::attestation_index((cid, c_index), AccountId32::from(who));
                         let attestations = encointer_ceremonies::Module::<sgx_runtime::Runtime>::attestation_registry((cid, c_index), attestation_index);
                         Some(attestations.encode())
+                    }
+                    TrustedGetter::meetup_registry(who, cid) => {
+                        let c_index = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
+                        let meetup_index: MeetupIndexType = encointer_ceremonies::Module::<sgx_runtime::Runtime>::meetup_index((cid, c_index), AccountId32::from(who));
+                        let registry: Vec<AccountId32> = encointer_ceremonies::Module::<sgx_runtime::Runtime>::meetup_registry((cid, c_index), meetup_index);
+                        Some(registry.encode())
                     }
                 },
                 Getter::public(g) => match g {

@@ -171,6 +171,7 @@ pub enum TrustedGetter {
     participant_index(AccountId, CurrencyIdentifier),
     meetup_index(AccountId, CurrencyIdentifier),
     attestations(AccountId, CurrencyIdentifier),
+    meetup_registry(AccountId, CurrencyIdentifier),
 }
 
 impl TrustedGetter {
@@ -180,6 +181,7 @@ impl TrustedGetter {
             TrustedGetter::participant_index(account, _) => account,
             TrustedGetter::meetup_index(account, _) => account,
             TrustedGetter::attestations(account, _) => account,
+            TrustedGetter::meetup_registry(account, _) => account,
         }
     }
 
