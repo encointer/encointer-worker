@@ -667,7 +667,7 @@ fn get_current_phase(api: &Api<sr25519::Pair>) -> CeremonyPhaseType {
 }
 
 fn get_meetup_index_and_location<'a>(
-    perform_operation: &'a dyn Fn(&ArgMatches<'_>, &TrustedOperation)  -> Option<Vec<u8>>,
+    perform_operation: &'a dyn Fn(&ArgMatches<'_>, &TrustedOperation) -> Option<Vec<u8>>,
     matches: &ArgMatches<'_>) -> Result<(MeetupIndexType, Location), String> {
     let arg_who = matches.value_of("accountid").unwrap();
     // println!("arg_who = {:?}", arg_who);
@@ -685,23 +685,23 @@ fn get_meetup_index_and_location<'a>(
     }
 
     let api = get_chain_api(matches);
-    let m_location = get_meetup_location(&api, m_index);
+    let m_location = get_meetup_location(&api, m_index, shard);
 
     if m_location.is_none() {
-        return Err(format!("participant {} has not been assigned to a meetup", arg_who));
+        return Err(format!("participant {} has not been assigned to a meetup. Location is None", arg_who));
     };
     info!("got location: {:?}", m_location);
     println!("{}", m_index);
     return Ok((m_index, m_location.unwrap()));
 }
 
-fn get_meetup_location(api: &Api<sr25519::Pair>, m_index: MeetupIndexType) -> Option<Location> {
-    return api.get_storage_value(
+fn get_meetup_location(api: &Api<sr25519::Pair>, m_index: MeetupIndexType, cid: CurrencyIdentifier) -> Option<Location> {
+    return api.get_storage_map(
         "EncointerCurrencies",
         "Locations",
+        cid,
         None,
-    )
-        .map(|locs: Vec<Location>| locs[m_index as usize]);
+    ).map(|locs: Vec<Location>| locs[m_index as usize]);
 }
 
 fn get_meetup_time(api: &Api<sr25519::Pair>, mlocation: Location) -> Option<Moment> {
