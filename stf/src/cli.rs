@@ -384,9 +384,9 @@ pub fn cmd<'a>(
                         )
                 })
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
-                    if let Err(e) = get_meetup_index_and_location(
-                        perform_operation, matches) {
-                        panic!(e)
+                    match get_meetup_index_and_location(perform_operation, matches) {
+                        Ok((index, _location)) => println!("{}", index),
+                        Err(e) => panic!(e),
                     }
                     Ok(())
                 }),
@@ -690,8 +690,8 @@ fn get_meetup_index_and_location<'a>(
     if m_location.is_none() {
         return Err(format!("participant {} has not been assigned to a meetup. Location is None", arg_who));
     };
+    info!("got index {}", m_index);
     info!("got location: {:?}", m_location);
-    println!("{}", m_index);
     return Ok((m_index, m_location.unwrap()));
 }
 
