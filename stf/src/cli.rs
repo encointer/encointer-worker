@@ -48,40 +48,39 @@ pub fn cmd<'a>(
     Commander::new()
         .options(|app| {
             app.setting(AppSettings::ColoredHelp)
-            .arg(
-                Arg::with_name("mrenclave")
-                    .short("m")
-                    .long("mrenclave")
-                    .global(true)
-                    .takes_value(true)
-                    .value_name("STRING")
-                    .help("targeted worker MRENCLAVE"),
-            )
-            .arg(
-                Arg::with_name("shard")
-                    .short("s")
-                    .long("shard")
-                    .global(true)
-                    .takes_value(true)
-                    .value_name("STRING")
-                    .help("shard identifier"),
-            )
-            .arg(
-                Arg::with_name("xt-signer")
-                    .short("a")
-                    .long("xt-signer")
-                    .global(true)
-                    .takes_value(true)
-                    .value_name("AccountId")
-                    .default_value("//Alice")
-                    .help("signer for publicly observable extrinsic"),
-            )
-            .name("encointer-client-teeproxy")
-            .version(VERSION)
-            .author("Supercomputing Systems AG <info@scs.ch>")
-            .about("trusted calls to worker enclave")
-            .after_help("stf subcommands depend on the stf crate this has been built against")
-
+                .arg(
+                    Arg::with_name("mrenclave")
+                        .short("m")
+                        .long("mrenclave")
+                        .global(true)
+                        .takes_value(true)
+                        .value_name("STRING")
+                        .help("targeted worker MRENCLAVE"),
+                )
+                .arg(
+                    Arg::with_name("shard")
+                        .short("s")
+                        .long("shard")
+                        .global(true)
+                        .takes_value(true)
+                        .value_name("STRING")
+                        .help("shard identifier"),
+                )
+                .arg(
+                    Arg::with_name("xt-signer")
+                        .short("a")
+                        .long("xt-signer")
+                        .global(true)
+                        .takes_value(true)
+                        .value_name("AccountId")
+                        .default_value("//Alice")
+                        .help("signer for publicly observable extrinsic"),
+                )
+                .name("encointer-client-teeproxy")
+                .version(VERSION)
+                .author("Supercomputing Systems AG <info@scs.ch>")
+                .about("trusted calls to worker enclave")
+                .after_help("stf subcommands depend on the stf crate this has been built against")
         })
         .add_cmd(
             Command::new("new-account")
@@ -124,27 +123,27 @@ pub fn cmd<'a>(
                 .description("send funds from one incognito account to another")
                 .options(|app| {
                     app.setting(AppSettings::ColoredHelp)
-                    .arg(
-                        Arg::with_name("from")
-                            .takes_value(true)
-                            .required(true)
-                            .value_name("SS58")
-                            .help("sender's AccountId in ss58check format"),
-                    )
-                    .arg(
-                        Arg::with_name("to")
-                            .takes_value(true)
-                            .required(true)
-                            .value_name("SS58")
-                            .help("recipient's AccountId in ss58check format"),
-                    )
-                    .arg(
-                        Arg::with_name("amount")
-                            .takes_value(true)
-                            .required(true)
-                            .value_name("U128")
-                            .help("amount to be transferred"),
-                    )
+                        .arg(
+                            Arg::with_name("from")
+                                .takes_value(true)
+                                .required(true)
+                                .value_name("SS58")
+                                .help("sender's AccountId in ss58check format"),
+                        )
+                        .arg(
+                            Arg::with_name("to")
+                                .takes_value(true)
+                                .required(true)
+                                .value_name("SS58")
+                                .help("recipient's AccountId in ss58check format"),
+                        )
+                        .arg(
+                            Arg::with_name("amount")
+                                .takes_value(true)
+                                .required(true)
+                                .value_name("U128")
+                                .help("amount to be transferred"),
+                        )
                 })
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
                     let arg_from = matches.value_of("from").unwrap();
@@ -180,13 +179,13 @@ pub fn cmd<'a>(
                 .description("query balance for incognito account in keystore")
                 .options(|app| {
                     app.setting(AppSettings::ColoredHelp)
-                    .arg(
-                        Arg::with_name("accountid")
-                            .takes_value(true)
-                            .required(true)
-                            .value_name("SS58")
-                            .help("AccountId in ss58check format"),
-                    )
+                        .arg(
+                            Arg::with_name("accountid")
+                                .takes_value(true)
+                                .required(true)
+                                .value_name("SS58")
+                                .help("AccountId in ss58check format"),
+                        )
                 })
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
                     let arg_who = matches.value_of("accountid").unwrap();
@@ -229,7 +228,7 @@ pub fn cmd<'a>(
                             let bn = get_block_number(&api);
                             let dr = get_demurrage_per_block(&api, shard);
                             debug!("will apply demurrage to {:?}. blocknumber {}, demurrage rate {}", vd, bn, dr);
-                            apply_demurrage(vd, bn, dr)                            
+                            apply_demurrage(vd, bn, dr)
                         } else {
                             info!("could not decode value. maybe hasn't been set? {:x?}", v);
                             BalanceType::from_num(0)
@@ -246,7 +245,7 @@ pub fn cmd<'a>(
                             println!("  participant count: {}", vd);
                         } else { println!("  participant count: error decoding"); }
                     } else { println!("  participant count: undisclosed (might be REGISTERING phase?)"); };
-                    
+
                     let top: TrustedOperation = PublicGetter::meetup_count(shard)
                         .into();
                     if let Some(v) = perform_operation(matches, &top) {
@@ -298,19 +297,19 @@ pub fn cmd<'a>(
                 .description("register participant for next encointer ceremony")
                 .options(|app| {
                     app.setting(AppSettings::ColoredHelp)
-                    .arg(
-                        Arg::with_name("accountid")
-                            .takes_value(true)
-                            .required(true)
-                            .value_name("SS58")
-                            .help("AccountId in ss58check format"),
-                    )
-                    .arg(
-                        Arg::with_name("reputation")
-                            .short("r")
-                            .long("reputation")
-                            .help("prove attendance reputation for last ceremony"),
-                    )
+                        .arg(
+                            Arg::with_name("accountid")
+                                .takes_value(true)
+                                .required(true)
+                                .value_name("SS58")
+                                .help("AccountId in ss58check format"),
+                        )
+                        .arg(
+                            Arg::with_name("reputation")
+                                .short("r")
+                                .long("reputation")
+                                .help("prove attendance reputation for last ceremony"),
+                        )
                 })
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
                     let arg_who = matches.value_of("accountid").unwrap();
@@ -343,13 +342,13 @@ pub fn cmd<'a>(
                 .description("get participant registration index for next encointer ceremony")
                 .options(|app| {
                     app.setting(AppSettings::ColoredHelp)
-                    .arg(
-                        Arg::with_name("accountid")
-                            .takes_value(true)
-                            .required(true)
-                            .value_name("SS58")
-                            .help("AccountId in ss58check format"),
-                    )
+                        .arg(
+                            Arg::with_name("accountid")
+                                .takes_value(true)
+                                .required(true)
+                                .value_name("SS58")
+                                .help("AccountId in ss58check format"),
+                        )
                 })
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
                     let arg_who = matches.value_of("accountid").unwrap();
@@ -362,7 +361,7 @@ pub fn cmd<'a>(
                     let top: TrustedOperation = TrustedGetter::participant_index(
                         sr25519_core::Public::from(who.public()),
                         shard, // for encointer we assume that every currency has its own shard. so shard == cid
-                        )
+                    )
                         .sign(&sr25519_core::Pair::from(who))
                         .into();
                     let part = perform_operation(matches, &top).unwrap();
@@ -376,13 +375,13 @@ pub fn cmd<'a>(
                 .description("query meetup index assigned to account")
                 .options(|app| {
                     app.setting(AppSettings::ColoredHelp)
-                    .arg(
-                        Arg::with_name("accountid")
-                            .takes_value(true)
-                            .required(true)
-                            .value_name("SS58")
-                            .help("AccountId in ss58check format"),
-                    )
+                        .arg(
+                            Arg::with_name("accountid")
+                                .takes_value(true)
+                                .required(true)
+                                .value_name("SS58")
+                                .help("AccountId in ss58check format"),
+                        )
                 })
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
                     if let Err(e) = get_meetup_index_and_location(
@@ -397,20 +396,20 @@ pub fn cmd<'a>(
                 .description("register encointer ceremony attestations")
                 .options(|app| {
                     app.setting(AppSettings::ColoredHelp)
-                    .arg(
-                        Arg::with_name("accountid")
-                            .takes_value(true)
-                            .required(true)
-                            .value_name("SS58")
-                            .help("AccountId in ss58check format"),
-                    )
-                    .arg(
-                        Arg::with_name("attestations")
-                            .takes_value(true)
-                            .required(true)
-                            .multiple(true)
-                            .min_values(2)
-                    )
+                        .arg(
+                            Arg::with_name("accountid")
+                                .takes_value(true)
+                                .required(true)
+                                .value_name("SS58")
+                                .help("AccountId in ss58check format"),
+                        )
+                        .arg(
+                            Arg::with_name("attestations")
+                                .takes_value(true)
+                                .required(true)
+                                .multiple(true)
+                                .min_values(2)
+                        )
                 })
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
                     let arg_who = matches.value_of("accountid").unwrap();
@@ -430,8 +429,8 @@ pub fn cmd<'a>(
                     );
                     let top: TrustedOperation = TrustedCall::ceremonies_register_attestations(
                         sr25519_core::Public::from(who.public()),
-                        attestations
-                        )
+                        attestations,
+                    )
                         .sign(&sr25519_core::Pair::from(who), nonce, &mrenclave, &shard)
                         .into();
                     perform_operation(matches, &top);
@@ -443,13 +442,13 @@ pub fn cmd<'a>(
                 .description("get attestations registration index for this encointer ceremony")
                 .options(|app| {
                     app.setting(AppSettings::ColoredHelp)
-                    .arg(
-                        Arg::with_name("accountid")
-                            .takes_value(true)
-                            .required(true)
-                            .value_name("SS58")
-                            .help("AccountId in ss58check format"),
-                    )
+                        .arg(
+                            Arg::with_name("accountid")
+                                .takes_value(true)
+                                .required(true)
+                                .value_name("SS58")
+                                .help("AccountId in ss58check format"),
+                        )
                 })
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
                     let arg_who = matches.value_of("accountid").unwrap();
@@ -462,7 +461,7 @@ pub fn cmd<'a>(
                     let top: TrustedOperation = TrustedGetter::attestations(
                         sr25519_core::Public::from(who.public()),
                         shard, // for encointer we assume that every currency has its own shard. so shard == cid
-                        )
+                    )
                         .sign(&sr25519_core::Pair::from(who))
                         .into();
                     let att_enc = perform_operation(matches, &top).unwrap();
@@ -476,13 +475,13 @@ pub fn cmd<'a>(
                 .description("create a fresh claim of attendance for account")
                 .options(|app| {
                     app.setting(AppSettings::ColoredHelp)
-                    .arg(
-                        Arg::with_name("accountid")
-                            .takes_value(true)
-                            .required(true)
-                            .value_name("SS58")
-                            .help("AccountId in ss58check format"),
-                    )
+                        .arg(
+                            Arg::with_name("accountid")
+                                .takes_value(true)
+                                .required(true)
+                                .value_name("SS58")
+                                .help("AccountId in ss58check format"),
+                        )
                         .arg(
                             Arg::with_name("n-participants")
                                 .takes_value(true)
@@ -535,13 +534,13 @@ pub fn cmd<'a>(
                 .description("sign someone's claim to attest personhood")
                 .options(|app| {
                     app.setting(AppSettings::ColoredHelp)
-                    .arg(
-                        Arg::with_name("signer")
-                            .takes_value(true)
-                            .required(true)
-                            .value_name("SS58")
-                            .help("AccountId in ss58check format"),
-                    )
+                        .arg(
+                            Arg::with_name("signer")
+                                .takes_value(true)
+                                .required(true)
+                                .value_name("SS58")
+                                .help("AccountId in ss58check format"),
+                        )
                         .arg(
                             Arg::with_name("claim")
                                 .takes_value(true)
@@ -589,6 +588,7 @@ pub fn get_identifiers(matches: &ArgMatches<'_>) -> ([u8; 32], ShardIdentifier) 
     };
     (mrenclave, shard)
 }
+
 // TODO this function is redundant with client::main
 fn get_accountid_from_str(account: &str) -> AccountId {
     match &account[..2] {
@@ -654,9 +654,9 @@ fn apply_demurrage(entry: BalanceEntry<BlockNumber>, current_block: BlockNumber,
     let elapsed_time_block_number = current_block.checked_sub(entry.last_update).unwrap();
     let elapsed_time_u32: u32 = elapsed_time_block_number.into();
     let elapsed_time = BalanceType::from_num(elapsed_time_u32);
-    let exponent : BalanceType = -demurrage_per_block * elapsed_time;
+    let exponent: BalanceType = -demurrage_per_block * elapsed_time;
     debug!("demurrage per block {}, current_block {}, last {}, elapsed_blocks {}", demurrage_per_block, current_block, entry.last_update, elapsed_time);
-    let exp_result : BalanceType = exp(exponent).unwrap();
+    let exp_result: BalanceType = exp(exponent).unwrap();
     entry.principal.checked_mul(exp_result).unwrap()
 }
 
@@ -712,7 +712,7 @@ fn get_meetup_time(api: &Api<sr25519::Pair>, mlocation: Location) -> Option<Mome
     let next_phase_timestamp: Moment = api.get_storage_value(
         "EncointerScheduler",
         "NextPhaseTimestamp",
-        None
+        None,
     ).unwrap();
     debug!("next phase timestamp: {}", next_phase_timestamp);
 
@@ -723,17 +723,16 @@ fn get_meetup_time(api: &Api<sr25519::Pair>, mlocation: Location) -> Option<Mome
                 "EncointerScheduler",
                 "PhaseDurations",
                 CeremonyPhaseType::ATTESTING,
-                None
+                None,
             ).unwrap();
             next_phase_timestamp - attesting_duration //- next_phase_timestamp.rem(ONE_DAY)
-        },
+        }
         CeremonyPhaseType::REGISTERING => panic!("ceremony phase must be ASSIGNING or ATTESTING to request meetup location.")
     };
     debug!("attesting start at: {}", attesting_start);
     let mtime = (
-        (attesting_start + ONE_DAY/2) as i64
-        - (mlon * (ONE_DAY as f64) / 360.0) as i64
-        ) as Moment; 
+        (attesting_start + ONE_DAY / 2) as i64 - (mlon * (ONE_DAY as f64) / 360.0) as i64
+    ) as Moment;
     debug!("meetup time at lon {}: {:?}", mlon, mtime);
     Some(mtime)
 }
