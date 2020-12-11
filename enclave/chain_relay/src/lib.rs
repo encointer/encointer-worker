@@ -127,7 +127,8 @@ impl LightValidation {
         let block_num = *header.number();
 
         // Check that the header has been finalized
-        let voter_set = VoterSet::new(validator_set.clone().into_iter()).expect("VoterSet may not be empty");
+        let voter_set =
+            VoterSet::new(validator_set.clone().into_iter()).expect("VoterSet may not be empty");
         Self::verify_grandpa_proof::<Block>(
             grandpa_proof.unwrap(),
             block_hash,
@@ -217,7 +218,7 @@ impl LightValidation {
 
         // sort highest index first
         found_xts.sort_by(|a, b| b.cmp(a));
-        
+
         let rm: Vec<OpaqueExtrinsic> = found_xts
             .into_iter()
             .map(|i| relay.verify_tx_inclusion.remove(i))

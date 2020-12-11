@@ -37,15 +37,15 @@ use sgx_types::{sgx_epid_group_id_t, sgx_status_t, sgx_target_info_t, size_t, Sg
 
 use substrate_api_client::{compose_extrinsic_offline, utils::storage_key};
 use substratee_node_primitives::CallWorkerFn;
-use substratee_stf::{
-    ShardIdentifier, Stf, TrustedCallSigned, Getter,
-};
+use substratee_stf::{Getter, ShardIdentifier, Stf, TrustedCallSigned};
 
 use codec::{Decode, Encode};
 use sp_core::{crypto::Pair, hashing::blake2_256};
 use sp_finality_grandpa::VersionedAuthorityList;
 
-use constants::{CALL_CONFIRMED, RUNTIME_SPEC_VERSION, RUNTIME_TRANSACTION_VERSION, SUBSRATEE_REGISTRY_MODULE};
+use constants::{
+    CALL_CONFIRMED, RUNTIME_SPEC_VERSION, RUNTIME_TRANSACTION_VERSION, SUBSRATEE_REGISTRY_MODULE,
+};
 use std::slice;
 use std::string::String;
 use std::vec::Vec;
@@ -65,7 +65,7 @@ use chain_relay::{
 use sp_runtime::OpaqueExtrinsic;
 use sp_runtime::{generic::SignedBlock, traits::Header as HeaderT};
 use substrate_api_client::extrinsic::xt_primitives::UncheckedExtrinsicV4;
-use substratee_stf::sgx::{OpaqueCall, shards_key_hash, storage_hashes_to_update_per_shard};
+use substratee_stf::sgx::{shards_key_hash, storage_hashes_to_update_per_shard, OpaqueCall};
 
 mod aes;
 mod attestation;
@@ -200,7 +200,10 @@ fn stf_post_actions(
 
     for xt in extrinsics_buffer.iter() {
         validator
-            .submit_xt_to_be_included(validator.num_relays, OpaqueExtrinsic::from_bytes(xt.as_slice()).unwrap())
+            .submit_xt_to_be_included(
+                validator.num_relays,
+                OpaqueExtrinsic::from_bytes(xt.as_slice()).unwrap(),
+            )
             .unwrap();
     }
 
@@ -242,7 +245,7 @@ pub unsafe extern "C" fn get_state(
 
     let mut state = match state::load(&shard) {
         Ok(s) => s,
-        Err(status) => return status
+        Err(status) => return status,
     };
 
     let validator = match io::light_validation::unseal() {

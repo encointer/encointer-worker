@@ -17,8 +17,8 @@
 
 use std::fs;
 
-use std::vec::Vec;
 use std::io::Write;
+use std::vec::Vec;
 
 use log::*;
 use sgx_tcrypto::rsgx_sha256_slice;
@@ -29,8 +29,8 @@ use crate::constants::{ENCRYPTED_STATE_FILE, SHARDS_PATH};
 use crate::hex;
 use crate::io;
 use crate::utils::UnwrapOrSgxErrorUnexpected;
-use base58::{ToBase58, FromBase58};
-use codec::{Encode, Decode};
+use base58::{FromBase58, ToBase58};
+use codec::{Decode, Encode};
 use sgx_externalities::SgxExternalitiesTrait;
 use sp_core::H256;
 use std::path::Path;

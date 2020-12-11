@@ -61,8 +61,11 @@ impl Api {
                 let value_slice = if let Ok(v) = hex::decode(&res) {
                     v
                 } else {
-                    error!("worker api returned a value that can't be hex decoded: {}", res);
-                    return Err(())
+                    error!(
+                        "worker api returned a value that can't be hex decoded: {}",
+                        res
+                    );
+                    return Err(());
                 };
                 let value: Option<Vec<u8>> = Decode::decode(&mut &value_slice[..]).unwrap();
                 match value {

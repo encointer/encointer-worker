@@ -1,24 +1,26 @@
 use sgx_tstd as std;
 use std::collections::HashMap;
-use std::prelude::v1::*;
 use std::format;
+use std::prelude::v1::*;
 
 use codec::{Decode, Encode};
 use derive_more::Display;
+use encointer_balances::{BalanceEntry, BalanceType};
+use encointer_ceremonies::{MeetupIndexType, ParticipantIndexType};
+use encointer_currencies::CurrencyIdentifier;
+use encointer_scheduler::{CeremonyIndexType, CeremonyPhaseType, OnCeremonyPhaseChange};
 use log_sgx::*;
 use metadata::StorageHasher;
-use sgx_runtime::{Runtime, BlockNumber};
+use sgx_runtime::{BlockNumber, Moment, Runtime};
 use sp_core::crypto::AccountId32;
 use sp_io::SgxExternalitiesTrait;
-use sp_runtime::{MultiAddress};
+use sp_runtime::MultiAddress;
 use support::traits::UnfilteredDispatchable;
-use encointer_scheduler::{CeremonyPhaseType, OnCeremonyPhaseChange, CeremonyIndexType};
-use encointer_balances::{BalanceType, BalanceEntry};
-use encointer_currencies::{CurrencyIdentifier};
-use encointer_ceremonies::{ParticipantIndexType, MeetupIndexType};
-use sgx_runtime::Moment;
 
-use crate::{AccountId, State, Stf, TrustedCall, TrustedCallSigned, Getter, PublicGetter, TrustedGetter, ShardIdentifier};
+use crate::{
+    AccountId, Getter, PublicGetter, ShardIdentifier, State, Stf, TrustedCall, TrustedCallSigned,
+    TrustedGetter,
+};
 
 /// Simple blob that holds a call in encoded format
 #[derive(Clone, Debug)]
@@ -52,7 +54,7 @@ impl Stf {
             );
             sp_io::storage::set(
                 &storage_value_key("EncointerCeremonies", "LocationTolerance"),
-                &1_000u32.encode(),// [m]
+                &1_000u32.encode(), // [m]
             );
             sp_io::storage::set(&storage_value_key("Sudo", "Key"), &ALICE_ENCODED);
         });
@@ -63,26 +65,27 @@ impl Stf {
         ext.execute_with(|| {
             let key = storage_value_key("EncointerScheduler", "CurrentPhase");
 
-            let next_phase = match map_update.get(&key) {
+            let next_phase_opt = match map_update.get(&key) {
                 Some(maybe_phase) => maybe_phase.to_owned(),
                 None => None,
             };
-            let curr_phase = sp_io::storage::get(&key);
+            let curr_phase_opt = sp_io::storage::get(&key);
 
-            map_update
-                .iter()
-                .for_each(|(k, v)| {
-                    match v {
-                        Some(value) => sp_io::storage::set(k, value),
-                        None => sp_io::storage::clear(k)
-                    };
-                });
+            map_update.iter().for_each(|(k, v)| {
+                match v {
+                    Some(value) => sp_io::storage::set(k, value),
+                    None => sp_io::storage::clear(k),
+                };
+            });
 
-            if next_phase.is_some() && next_phase != curr_phase {
-                if let Ok(next_phase) = CeremonyPhaseType::decode(&mut &next_phase.unwrap()[..])
-                {
-                    info!("Updated phase. Phase is now: {:?}", next_phase);
-                    encointer_ceremonies::Module::<sgx_runtime::Runtime>::on_ceremony_phase_change(next_phase);
+            if next_phase_opt != curr_phase_opt {
+                if let Some(next_phase_vec) = next_phase_opt {
+                    if let Ok(next_phase) = CeremonyPhaseType::decode(&mut &next_phase_vec[..]) {
+                        info!("Updated phase. Phase is now: {:?}", next_phase);
+                        encointer_ceremonies::Module::<sgx_runtime::Runtime>::on_ceremony_phase_change(
+                            next_phase,
+                        );
+                    }
                 }
             }
         });
@@ -95,68 +98,110 @@ impl Stf {
         });
     }
 
-
     pub fn execute(
         ext: &mut State,
         call: TrustedCallSigned,
         _calls: &mut Vec<OpaqueCall>,
     ) -> Result<(), StfError> {
         ext.execute_with(|| {
-            debug!("CurrentPhase {:?}", sp_io::storage::get(
-                &storage_value_key("EncointerScheduler", "CurrentPhase")).map(|v| {
-                CeremonyPhaseType::decode(&mut &v.as_slice()[..])}));
-            debug!("CurrentCeremonyIndex {:?}", sp_io::storage::get(
-                &storage_value_key("EncointerScheduler", "CurrentCeremonyIndex")).map(|v| {
-                CeremonyIndexType::decode(&mut &v.as_slice()[..])}));
-        
+            debug!(
+                "CurrentPhase {:?}",
+                sp_io::storage::get(&storage_value_key("EncointerScheduler", "CurrentPhase"))
+                    .map(|v| { CeremonyPhaseType::decode(&mut &v.as_slice()[..]) })
+            );
+            debug!(
+                "CurrentCeremonyIndex {:?}",
+                sp_io::storage::get(&storage_value_key(
+                    "EncointerScheduler",
+                    "CurrentCeremonyIndex"
+                ))
+                .map(|v| { CeremonyIndexType::decode(&mut &v.as_slice()[..]) })
+            );
+
             match call.call {
                 TrustedCall::balance_transfer(from, to, cid, value) => {
                     let origin = sgx_runtime::Origin::signed(AccountId32::from(from));
                     sgx_runtime::EncointerBalancesCall::<Runtime>::transfer(
-                            MultiAddress::Id(AccountId32::from(to)), 
-                            cid, 
-                            value
-                        )
-                        .dispatch_bypass_filter(origin)
-                        .map_err(|_| StfError::Dispatch("balance_transfer".to_string()))?;
+                        MultiAddress::Id(AccountId32::from(to)),
+                        cid,
+                        value,
+                    )
+                    .dispatch_bypass_filter(origin)
+                    .map_err(|_| StfError::Dispatch("balance_transfer".to_string()))?;
                     Ok(())
                 }
                 TrustedCall::ceremonies_register_participant(from, cid, proof) => {
                     let origin = sgx_runtime::Origin::signed(AccountId32::from(from));
 
-                    if encointer_scheduler::Module::<sgx_runtime::Runtime>::current_phase() != CeremonyPhaseType::REGISTERING {
-                        return Err(StfError::Dispatch("registering participants can only be done during REGISTERING phase".to_string()))
+                    if encointer_scheduler::Module::<sgx_runtime::Runtime>::current_phase()
+                        != CeremonyPhaseType::REGISTERING
+                    {
+                        return Err(StfError::Dispatch(
+                            "registering participants can only be done during REGISTERING phase"
+                                .to_string(),
+                        ));
                     }
 
-                    sgx_runtime::EncointerCeremoniesCall::<Runtime>::register_participant(cid, proof.clone())
-                        .dispatch_bypass_filter(origin)
-                        .map_err(|_| StfError::Dispatch(format!("ceremonies_register_participant failed for {:?} cid {} proof {:?}", from, cid, proof)))?;
+                    sgx_runtime::EncointerCeremoniesCall::<Runtime>::register_participant(
+                        cid,
+                        proof.clone(),
+                    )
+                    .dispatch_bypass_filter(origin)
+                    .map_err(|_| {
+                        StfError::Dispatch(format!(
+                            "ceremonies_register_participant failed for {:?} cid {} proof {:?}",
+                            from, cid, proof
+                        ))
+                    })?;
                     Ok(())
                 }
                 TrustedCall::ceremonies_register_attestations(from, attestations) => {
                     debug!("Attestations {:?}", attestations);
-                    debug!("NextPhaseTimestamp {:?}", sp_io::storage::get(
-                        &storage_value_key("EncointerScheduler", "NextPhaseTimestamp")).map(|v| {
-                        u64::decode(&mut &v.as_slice()[..])}));
-                    debug!("PhaseDurations for ATTESTING {:?}", sp_io::storage::get(
-                        &storage_map_key("EncointerScheduler", "PhaseDurations", &CeremonyPhaseType::ATTESTING, &StorageHasher::Blake2_128Concat)).map(|v| {
-                        u64::decode(&mut &v.as_slice()[..])}));                        
-                    if encointer_scheduler::Module::<sgx_runtime::Runtime>::current_phase() != CeremonyPhaseType::ATTESTING {
-                        return Err(StfError::Dispatch("registering attestations can only be done during ATTESTING phase".to_string()))
+                    debug!(
+                        "NextPhaseTimestamp {:?}",
+                        sp_io::storage::get(&storage_value_key(
+                            "EncointerScheduler",
+                            "NextPhaseTimestamp"
+                        ))
+                        .map(|v| { u64::decode(&mut &v.as_slice()[..]) })
+                    );
+                    debug!(
+                        "PhaseDurations for ATTESTING {:?}",
+                        sp_io::storage::get(&storage_map_key(
+                            "EncointerScheduler",
+                            "PhaseDurations",
+                            &CeremonyPhaseType::ATTESTING,
+                            &StorageHasher::Blake2_128Concat
+                        ))
+                        .map(|v| { u64::decode(&mut &v.as_slice()[..]) })
+                    );
+                    if encointer_scheduler::Module::<sgx_runtime::Runtime>::current_phase()
+                        != CeremonyPhaseType::ATTESTING
+                    {
+                        return Err(StfError::Dispatch(
+                            "registering attestations can only be done during ATTESTING phase"
+                                .to_string(),
+                        ));
                     }
-        
+
                     let origin = sgx_runtime::Origin::signed(AccountId32::from(from));
-                    sgx_runtime::EncointerCeremoniesCall::<Runtime>::register_attestations(attestations)
-                        .dispatch_bypass_filter(origin)
-                        .map_err(|_| StfError::Dispatch("ceremonies_register_attestations".to_string()))?;
+                    sgx_runtime::EncointerCeremoniesCall::<Runtime>::register_attestations(
+                        attestations,
+                    )
+                    .dispatch_bypass_filter(origin)
+                    .map_err(|_| {
+                        StfError::Dispatch("ceremonies_register_attestations".to_string())
+                    })?;
                     Ok(())
                 }
                 TrustedCall::ceremonies_grant_reputation(ceremony_master, cid, reputable) => {
                     Self::ensure_ceremony_master(ceremony_master)?;
                     let origin = sgx_runtime::Origin::signed(AccountId32::from(ceremony_master));
-                    sgx_runtime::EncointerCeremoniesCall::<Runtime>::grant_reputation(cid, reputable)
-                        .dispatch_bypass_filter(origin)
-                        .map_err(|_| StfError::Dispatch("ceremonies_grant_reputation".to_string()))?;
+                    sgx_runtime::EncointerCeremoniesCall::<Runtime>::grant_reputation(
+                        cid, reputable,
+                    )
+                    .dispatch_bypass_filter(origin)
+                    .map_err(|_| StfError::Dispatch("ceremonies_grant_reputation".to_string()))?;
                     Ok(())
                 }
             }
@@ -246,7 +291,9 @@ impl Stf {
     }
 
     fn ensure_ceremony_master(account: AccountId) -> Result<(), StfError> {
-        if sp_io::storage::get(&storage_value_key("EncointerScheduler", "CeremonyMaster")).unwrap() == account.encode() {
+        if sp_io::storage::get(&storage_value_key("EncointerScheduler", "CeremonyMaster")).unwrap()
+            == account.encode()
+        {
             Ok(())
         } else {
             Err(StfError::MissingPrivileges(account))
@@ -261,10 +308,16 @@ impl Stf {
                 key_hashes.push(nonce_key_hash(&account))
             }
             TrustedCall::ceremonies_register_participant(_, _, _) => {
-                key_hashes.push(storage_value_key("EncointerCurrencies", "CurrencyIdentifiers"));
+                key_hashes.push(storage_value_key(
+                    "EncointerCurrencies",
+                    "CurrencyIdentifiers",
+                ));
             }
             TrustedCall::ceremonies_register_attestations(_, _) => {
-                key_hashes.push(storage_value_key("EncointerCurrencies", "CurrencyIdentifiers"));
+                key_hashes.push(storage_value_key(
+                    "EncointerCurrencies",
+                    "CurrencyIdentifiers",
+                ));
             }
             TrustedCall::ceremonies_grant_reputation(_, _, _) => {
                 key_hashes.push(storage_value_key("EncointerScheduler", "CeremonyMaster"));
@@ -274,7 +327,10 @@ impl Stf {
     }
 
     pub fn get_storage_hashes_to_update_for_getter(getter: &Getter) -> Vec<Vec<u8>> {
-        debug!("No specific storage updates needed for getter. Returning those for on block: {:?}", getter);
+        debug!(
+            "No specific storage updates needed for getter. Returning those for on block: {:?}",
+            getter
+        );
         Self::storage_hashes_to_update_on_block()
     }
 
@@ -285,9 +341,20 @@ impl Stf {
         key_hashes.push(shards_key_hash());
 
         key_hashes.push(storage_value_key("EncointerScheduler", "CurrentPhase"));
-        key_hashes.push(storage_value_key("EncointerScheduler", "CurrentCeremonyIndex"));
-        key_hashes.push(storage_value_key("EncointerScheduler", "NextPhaseTimestamp"));
-        key_hashes.push(storage_map_key("EncointerScheduler", "PhaseDurations", &CeremonyPhaseType::ATTESTING, &StorageHasher::Blake2_128Concat));
+        key_hashes.push(storage_value_key(
+            "EncointerScheduler",
+            "CurrentCeremonyIndex",
+        ));
+        key_hashes.push(storage_value_key(
+            "EncointerScheduler",
+            "NextPhaseTimestamp",
+        ));
+        key_hashes.push(storage_map_key(
+            "EncointerScheduler",
+            "PhaseDurations",
+            &CeremonyPhaseType::ATTESTING,
+            &StorageHasher::Blake2_128Concat,
+        ));
 
         key_hashes
     }
@@ -304,10 +371,20 @@ pub fn storage_hashes_to_update_per_shard(shard: &ShardIdentifier) -> Vec<Vec<u8
 }
 
 pub fn bootstrapper_key_hash(cid: &CurrencyIdentifier) -> Vec<u8> {
-    storage_map_key("EncointerCurrencies", "Bootstrappers", cid, &StorageHasher::Blake2_128Concat)
+    storage_map_key(
+        "EncointerCurrencies",
+        "Bootstrappers",
+        cid,
+        &StorageHasher::Blake2_128Concat,
+    )
 }
 pub fn location_key_hash(cid: &CurrencyIdentifier) -> Vec<u8> {
-    storage_map_key("EncointerCurrencies", "Locations", cid, &StorageHasher::Blake2_128Concat)
+    storage_map_key(
+        "EncointerCurrencies",
+        "Locations",
+        cid,
+        &StorageHasher::Blake2_128Concat,
+    )
 }
 
 pub fn shards_key_hash() -> Vec<u8> {

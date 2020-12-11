@@ -46,8 +46,8 @@ pub fn enclave_run_key_provisioning_server(
         Ok(l) => l,
         Err(e) => {
             error!("error starting MU-RA server on {}: {}", addr, e);
-            return
-        },
+            return;
+        }
     };
     loop {
         match listener.accept() {
@@ -84,8 +84,8 @@ pub fn enclave_request_key_provisioning(
         Ok(s) => s,
         Err(e) => {
             error!("error connecting to {}: {}", addr, e);
-            return Err(sgx_status_t::SGX_ERROR_UNEXPECTED)
-        },
+            return Err(sgx_status_t::SGX_ERROR_UNEXPECTED);
+        }
     };
     let mut status = sgx_status_t::SGX_SUCCESS;
 

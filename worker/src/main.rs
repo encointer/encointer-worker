@@ -33,6 +33,9 @@ use clap::{load_yaml, App};
 use codec::{Decode, Encode};
 use lazy_static::lazy_static;
 use log::*;
+use my_node_runtime::{
+    substratee_registry::ShardIdentifier, Event, Hash, Header, SignedBlock, UncheckedExtrinsic,
+};
 use sp_core::{
     crypto::{AccountId32, Ss58Codec},
     sr25519,
@@ -40,10 +43,7 @@ use sp_core::{
     Pair,
 };
 use sp_keyring::AccountKeyring;
-use substrate_api_client::{utils::hexstr_to_vec, Api, XtStatus, GenericAddress};
-use my_node_runtime::{
-    substratee_registry::ShardIdentifier, Event, Hash, Header, SignedBlock, UncheckedExtrinsic,
-};
+use substrate_api_client::{utils::hexstr_to_vec, Api, GenericAddress, XtStatus};
 
 use crate::enclave::api::{enclave_init_chain_relay, enclave_sync_chain_relay};
 use enclave::api::{
@@ -53,10 +53,7 @@ use enclave::api::{
 use enclave::tls_ra::{enclave_request_key_provisioning, enclave_run_key_provisioning_server};
 use sp_finality_grandpa::{AuthorityList, VersionedAuthorityList, GRANDPA_AUTHORITIES_KEY};
 use std::time::Duration;
-//use substratee_worker_api::requests::ClientRequest;
-//use substratee_worker_api::Api as WorkerApi;
 use ws_server::start_ws_server;
-use substratee_worker_api::requests::ClientRequest;
 
 mod constants;
 mod enclave;
@@ -66,7 +63,7 @@ mod ws_server;
 
 /// how many blocks will be synced before storing the chain db to disk
 const BLOCK_SYNC_BATCH_SIZE: u32 = 1000;
-const VERSION: &'static str = env!("CARGO_PKG_VERSION");
+const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 fn main() {
     // Setup logging
@@ -108,30 +105,34 @@ fn main() {
                 ShardIdentifier::from_slice(&mrenclave[..])
             }
         };
-        let ext_api_url = smatches.value_of("w-server").unwrap_or("ws://127.0.0.1:2000");
+        let ext_api_url = smatches
+            .value_of("w-server")
+            .unwrap_or("ws://127.0.0.1:2000");
         println!("Advertising worker api at {}", ext_api_url);
         let skip_ra = smatches.is_present("skip-ra");
         worker(w_ip, w_port, mu_ra_port, &shard, ext_api_url, skip_ra);
     } else if let Some(smatches) = matches.subcommand_matches("request-keys") {
-            let shard: ShardIdentifier = match smatches.value_of("shard") {
-                Some(value) => {
-                    let shard_vec = value.from_base58().unwrap();
-                    let mut shard = [0u8; 32];
-                    shard.copy_from_slice(&shard_vec[..]);
-                    shard.into()
-                }
-                _ => {
-                    let enclave = enclave_init().unwrap();
-                    let mrenclave = enclave_mrenclave(enclave.geteid()).unwrap();
-                    info!(
-                        "no shard specified. using mrenclave as id: {}",
-                        mrenclave.to_base58()
-                    );
-                    ShardIdentifier::from_slice(&mrenclave[..])
-                }
-            };
-            let provider_url = smatches.value_of("provider").expect("provider must be specified");
-            request_keys(provider_url, &shard);
+        let shard: ShardIdentifier = match smatches.value_of("shard") {
+            Some(value) => {
+                let shard_vec = value.from_base58().unwrap();
+                let mut shard = [0u8; 32];
+                shard.copy_from_slice(&shard_vec[..]);
+                shard.into()
+            }
+            _ => {
+                let enclave = enclave_init().unwrap();
+                let mrenclave = enclave_mrenclave(enclave.geteid()).unwrap();
+                info!(
+                    "no shard specified. using mrenclave as id: {}",
+                    mrenclave.to_base58()
+                );
+                ShardIdentifier::from_slice(&mrenclave[..])
+            }
+        };
+        let provider_url = smatches
+            .value_of("provider")
+            .expect("provider must be specified");
+        request_keys(provider_url, &shard);
     } else if matches.is_present("shielding-key") {
         info!("*** Get the public key from the TEE\n");
         let enclave = enclave_init().unwrap();
@@ -240,13 +241,13 @@ fn main() {
 }
 
 fn worker(
-    w_ip: &str, 
-    w_port: &str, 
-    mu_ra_port: &str, 
-    shard: &ShardIdentifier, 
-    ext_api_url: &str, 
-    skip_ra: bool
-){
+    w_ip: &str,
+    w_port: &str,
+    mu_ra_port: &str,
+    shard: &ShardIdentifier,
+    ext_api_url: &str,
+    skip_ra: bool,
+) {
     println!("Encointer Worker v{}", VERSION);
     info!("starting worker on shard {}", shard.encode().to_base58());
     // ------------------------------------------------------------------------
@@ -268,7 +269,7 @@ fn worker(
     println!("worker api listening on ws://{}:{}", w_ip, w_port);
     let (ws_sender, ws_receiver) = channel();
     let w_url = format!("{}:{}", w_ip, w_port);
-    start_ws_server(w_url.clone(), ws_sender);
+    start_ws_server(w_url, ws_sender);
 
     // ------------------------------------------------------------------------
     // let new workers call us for key provisioning
@@ -294,14 +295,15 @@ fn worker(
     // ------------------------------------------------------------------------
     // perform a remote attestation and get an unchecked extrinsic back
 
-    if (skip_ra) {
+    if skip_ra {
         println!("[!] skipping remote attestation. will not register this enclave on chain");
     } else {
         // get enclaves's account nonce
         let nonce = get_nonce(&api, &tee_accountid);
         info!("Enclave nonce = {:?}", nonce);
 
-        let uxt = enclave_perform_ra(eid, genesis_hash, nonce, ext_api_url.as_bytes().to_vec()).unwrap();
+        let uxt =
+            enclave_perform_ra(eid, genesis_hash, nonce, ext_api_url.as_bytes().to_vec()).unwrap();
 
         let ue = UncheckedExtrinsic::decode(&mut uxt.as_slice()).unwrap();
 
@@ -356,10 +358,9 @@ fn worker(
     }
 }
 
-fn request_keys(
-    provider_url: &str, 
-    shard: &ShardIdentifier, 
-) {
+fn request_keys(provider_url: &str, _shard: &ShardIdentifier) {
+    // FIXME: we now assume that keys are equal for all shards
+
     // initialize the enclave
     #[cfg(feature = "production")]
     println!("*** Starting enclave in production mode");
@@ -368,8 +369,11 @@ fn request_keys(
 
     let enclave = enclave_init().unwrap();
     let eid = enclave.geteid();
-    
-    println!("Requesting key provisioning from worker at {}", provider_url);
+
+    println!(
+        "Requesting key provisioning from worker at {}",
+        provider_url
+    );
 
     enclave_request_key_provisioning(
         eid,
@@ -425,7 +429,10 @@ fn print_events(events: Events, _sender: Sender<String>) {
                         );
                     }
                     my_node_runtime::substratee_registry::RawEvent::Forwarded(shard) => {
-                        println!("[+] Received trusted call for shard {}", shard.encode().to_base58());
+                        println!(
+                            "[+] Received trusted call for shard {}",
+                            shard.encode().to_base58()
+                        );
                     }
                     my_node_runtime::substratee_registry::RawEvent::CallConfirmed(
                         sender,
@@ -558,9 +565,8 @@ pub fn sync_chain_relay(
                 extrinsics.len()
             );
             for xt in extrinsics.into_iter() {
-                api.send_extrinsic(hex_encode(xt), XtStatus::Ready)
-                    .unwrap();
-            } 
+                api.send_extrinsic(hex_encode(xt), XtStatus::Ready).unwrap();
+            }
             // await next block to avoid #37
             let (events_in, events_out) = channel();
             api.subscribe_events(events_in);
@@ -636,10 +642,7 @@ fn ensure_account_has_funds(api: &mut Api<sr25519::Pair>, accountid: &AccountId3
         api.signer = Some(alice);
 
         println!("[+] bootstrap funding Enclave form Alice's funds");
-        let xt = api.balance_transfer(
-            GenericAddress::Id(accountid.clone()), 
-            1_000_000_000_000
-        );
+        let xt = api.balance_transfer(GenericAddress::Id(accountid.clone()), 1_000_000_000_000);
         let xt_hash = api
             .send_extrinsic(xt.hex_encode(), XtStatus::InBlock)
             .unwrap();

@@ -30,11 +30,11 @@ extern crate clap;
 
 use codec::{Compact, Decode, Encode};
 use sp_core::{sr25519, Pair, H256};
-use sp_runtime::{traits::Verify, AnySignature, MultiSignature, AccountId32};
+use sp_runtime::{traits::Verify, AccountId32, AnySignature, MultiSignature};
 pub type ShardIdentifier = H256;
-pub use encointer_currencies::CurrencyIdentifier;
-pub use encointer_ceremonies::ProofOfAttendance;
 pub use encointer_ceremonies::Attestation;
+pub use encointer_ceremonies::ProofOfAttendance;
+pub use encointer_currencies::CurrencyIdentifier;
 
 #[cfg(feature = "sgx")]
 pub mod sgx;
@@ -92,13 +92,11 @@ impl From<PublicGetter> for TrustedOperation {
     }
 }
 
-
-
 #[derive(Encode, Decode, Clone, Debug)]
 #[allow(non_camel_case_types)]
 pub enum Getter {
-    public(PublicGetter),   
-    trusted(TrustedGetterSigned)
+    public(PublicGetter),
+    trusted(TrustedGetterSigned),
 }
 
 impl From<PublicGetter> for Getter {
@@ -129,9 +127,16 @@ pub enum PublicGetter {
 #[allow(non_camel_case_types)]
 pub enum TrustedCall {
     balance_transfer(AccountId, AccountId, CurrencyIdentifier, BalanceType),
-    ceremonies_register_participant(AccountId, CurrencyIdentifier, Option<ProofOfAttendance<MultiSignature, AccountId32>>),
-    ceremonies_register_attestations(AccountId, Vec<Attestation<MultiSignature, AccountId32, u64>>),
-    ceremonies_grant_reputation(AccountId, CurrencyIdentifier, AccountId32)
+    ceremonies_register_participant(
+        AccountId,
+        CurrencyIdentifier,
+        Option<ProofOfAttendance<MultiSignature, AccountId32>>,
+    ),
+    ceremonies_register_attestations(
+        AccountId,
+        Vec<Attestation<MultiSignature, AccountId32, u64>>,
+    ),
+    ceremonies_grant_reputation(AccountId, CurrencyIdentifier, AccountId32),
 }
 
 impl TrustedCall {

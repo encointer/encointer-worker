@@ -28,9 +28,9 @@ use sp_keyring::AccountKeyring;
 use std::{fs, str};
 
 use crate::enclave::api::*;
-use crate::{enclave_account, enclave_mrenclave, ensure_account_has_funds};
+use crate::{enclave_account, ensure_account_has_funds};
 use substrate_api_client::Api;
-use substratee_stf::{ShardIdentifier, TrustedCall, TrustedGetter, TrustedGetterSigned};
+use substratee_stf::{ShardIdentifier, TrustedGetter, TrustedGetterSigned};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct Message {
@@ -40,12 +40,12 @@ pub struct Message {
 }
 
 /// Who must be root account
-pub fn encrypted_set_balance(eid: sgx_enclave_id_t, who: AccountKeyring, nonce: u32) -> Vec<u8> {
+pub fn encrypted_set_balance(_eid: sgx_enclave_id_t, _who: AccountKeyring, _nonce: u32) -> Vec<u8> {
     error!("not implemented in encointer");
     vec![]
 }
 
-pub fn encrypted_unshield(eid: sgx_enclave_id_t, who: AccountKeyring, nonce: u32) -> Vec<u8> {
+pub fn encrypted_unshield(_eid: sgx_enclave_id_t, _who: AccountKeyring, _nonce: u32) -> Vec<u8> {
     error!("not implemented in encointer");
     vec![]
 }

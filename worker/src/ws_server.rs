@@ -50,17 +50,14 @@ pub fn start_ws_server(addr: String, worker: MpscSender<WsServerRequest>) {
 
     impl Handler for Server {
         fn on_message(&mut self, msg: Message) -> Result<()> {
-            debug!(
-                "Forwarding message to worker event loop: {:?}",
-                msg
-            );
+            debug!("Forwarding message to worker event loop: {:?}", msg);
 
             match ClientRequest::decode(&mut msg.into_data().as_slice()) {
                 Ok(req) => {
                     self.worker
                         .send(WsServerRequest::new(self.client.clone(), req))
                         .unwrap();
-                },
+                }
                 Err(_) => {
                     warn!("Could not decode request");
                     self.client.send("Could not decode request").unwrap()
@@ -83,8 +80,7 @@ pub fn start_ws_server(addr: String, worker: MpscSender<WsServerRequest>) {
             Ok(_) => (),
             Err(e) => {
                 error!("error starting worker api server on {}: {}", addr, e);
-                return
-            },
+            }
         };
     });
 }

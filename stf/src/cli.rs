@@ -15,26 +15,30 @@
 
 */
 
-use crate::{AccountId, ShardIdentifier, TrustedCall, TrustedGetter, PublicGetter, TrustedOperation, Attestation};
+use crate::{
+    AccountId, Attestation, PublicGetter, ShardIdentifier, TrustedCall, TrustedGetter,
+    TrustedOperation,
+};
 use base58::{FromBase58, ToBase58};
-use clap::{Arg, ArgMatches, AppSettings};
+use clap::{AppSettings, Arg, ArgMatches};
 use clap_nested::{Command, Commander, MultiCommand};
 use codec::{Decode, Encode};
+use encointer_balances::{BalanceEntry, BalanceType};
+use encointer_ceremonies::{
+    ClaimOfAttendance, MeetupIndexType, ParticipantIndexType, ProofOfAttendance,
+};
+use encointer_currencies::{CurrencyIdentifier, CurrencyPropertiesType, Location};
+use encointer_scheduler::{CeremonyIndexType, CeremonyPhaseType};
+use fixed::traits::LossyInto;
+use fixed::transcendental::exp;
 use log::*;
+use my_node_runtime::{BlockNumber, Header, Signature, ONE_DAY};
 use sp_application_crypto::{ed25519, sr25519};
 use sp_core::{crypto::Ss58Codec, sr25519 as sr25519_core, Pair};
 use sp_runtime::traits::IdentifyAccount;
+use sp_runtime::{AccountId32, MultiSignature};
 use std::path::PathBuf;
-use fixed::traits::LossyInto;
-use fixed::transcendental::exp;
-use my_node_runtime::{BlockNumber, Header, ONE_DAY, Signature};
-use encointer_balances::{BalanceType, BalanceEntry};
-use encointer_currencies::{Location, CurrencyIdentifier, CurrencyPropertiesType};
-use encointer_ceremonies::{MeetupIndexType, ClaimOfAttendance, ParticipantIndexType, ProofOfAttendance};
-use encointer_scheduler::{CeremonyPhaseType, CeremonyIndexType};
-use hex;
 use substrate_api_client::Api;
-use sp_runtime::{MultiSignature, AccountId32};
 use substrate_client_keystore::LocalKeystore;
 
 type Moment = u64;
@@ -167,9 +171,10 @@ pub fn cmd<'a>(
                         sr25519_core::Public::from(from.public()),
                         to,
                         shard, // for encointer we assume that every currency has its own shard. so shard == cid
-                        BalanceType::from_num(amount))
-                        .sign(&sr25519_core::Pair::from(from), nonce, &mrenclave, &shard)
-                        .into();
+                        BalanceType::from_num(amount),
+                    )
+                    .sign(&sr25519_core::Pair::from(from), nonce, &mrenclave, &shard)
+                    .into();
                     let _ = perform_operation(matches, &top);
                     Ok(())
                 }),
@@ -178,29 +183,32 @@ pub fn cmd<'a>(
             Command::new("balance")
                 .description("query balance for incognito account in keystore")
                 .options(|app| {
-                    app.setting(AppSettings::ColoredHelp)
-                        .arg(
-                            Arg::with_name("accountid")
-                                .takes_value(true)
-                                .required(true)
-                                .value_name("SS58")
-                                .help("AccountId in ss58check format"),
-                        )
+                    app.setting(AppSettings::ColoredHelp).arg(
+                        Arg::with_name("accountid")
+                            .takes_value(true)
+                            .required(true)
+                            .value_name("SS58")
+                            .help("AccountId in ss58check format"),
+                    )
                 })
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
                     let arg_who = matches.value_of("accountid").unwrap();
                     let who = get_pair_from_str(matches, arg_who);
                     let (_mrenclave, shard) = get_identifiers(matches);
-                    let top: TrustedOperation = TrustedGetter::balance(sr25519_core::Public::from(who.public()), shard)
-                        .sign(&sr25519_core::Pair::from(who))
-                        .into();
+                    let top: TrustedOperation =
+                        TrustedGetter::balance(sr25519_core::Public::from(who.public()), shard)
+                            .sign(&sr25519_core::Pair::from(who))
+                            .into();
                     let res = perform_operation(matches, &top);
                     let bal = if let Some(v) = res {
                         if let Ok(vd) = <BalanceEntry<BlockNumber>>::decode(&mut v.as_slice()) {
                             let api = get_chain_api(matches);
                             let bn = get_block_number(&api);
                             let dr = get_demurrage_per_block(&api, shard);
-                            debug!("will apply demurrage to {:?}. blocknumber {}, demurrage rate {}", vd, bn, dr);
+                            debug!(
+                                "will apply demurrage to {:?}. blocknumber {}, demurrage rate {}",
+                                vd, bn, dr
+                            );
                             apply_demurrage(vd, bn, dr)
                         } else {
                             info!("could not decode value. maybe hasn't been set? {:x?}", v);
@@ -215,19 +223,26 @@ pub fn cmd<'a>(
         )
         .add_cmd(
             Command::new("info")
-                .description("query various statistics and settings for a currency (public information)")
+                .description(
+                    "query various statistics and settings for a currency (public information)",
+                )
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
                     let (_mrenclave, shard) = get_identifiers(matches);
-                    println!("Public information about currency {}", shard.encode().to_base58());
-                    let top: TrustedOperation = PublicGetter::total_issuance(shard)
-                        .into();
+                    println!(
+                        "Public information about currency {}",
+                        shard.encode().to_base58()
+                    );
+                    let top: TrustedOperation = PublicGetter::total_issuance(shard).into();
                     let res = perform_operation(matches, &top);
                     let bal = if let Some(v) = res {
                         if let Ok(vd) = <BalanceEntry<BlockNumber>>::decode(&mut v.as_slice()) {
                             let api = get_chain_api(matches);
                             let bn = get_block_number(&api);
                             let dr = get_demurrage_per_block(&api, shard);
-                            debug!("will apply demurrage to {:?}. blocknumber {}, demurrage rate {}", vd, bn, dr);
+                            debug!(
+                                "will apply demurrage to {:?}. blocknumber {}, demurrage rate {}",
+                                vd, bn, dr
+                            );
                             apply_demurrage(vd, bn, dr)
                         } else {
                             info!("could not decode value. maybe hasn't been set? {:x?}", v);
@@ -238,56 +253,74 @@ pub fn cmd<'a>(
                     };
                     println!("  total issuance: {}", bal);
 
-                    let top: TrustedOperation = PublicGetter::participant_count(shard)
-                        .into();
+                    let top: TrustedOperation = PublicGetter::participant_count(shard).into();
                     if let Some(v) = perform_operation(matches, &top) {
                         if let Ok(vd) = ParticipantIndexType::decode(&mut v.as_slice()) {
                             println!("  participant count: {}", vd);
-                        } else { println!("  participant count: error decoding"); }
-                    } else { println!("  participant count: undisclosed (might be REGISTERING phase?)"); };
+                        } else {
+                            println!("  participant count: error decoding");
+                        }
+                    } else {
+                        println!("  participant count: undisclosed (might be REGISTERING phase?)");
+                    };
 
-                    let top: TrustedOperation = PublicGetter::meetup_count(shard)
-                        .into();
+                    let top: TrustedOperation = PublicGetter::meetup_count(shard).into();
                     if let Some(v) = perform_operation(matches, &top) {
                         if let Ok(vd) = MeetupIndexType::decode(&mut v.as_slice()) {
                             println!("  meetup count: {}", vd);
-                        } else { println!("  meetup count: error decoding"); }
-                    } else { println!("  meetup count: unknown"); };
+                        } else {
+                            println!("  meetup count: error decoding");
+                        }
+                    } else {
+                        println!("  meetup count: unknown");
+                    };
 
-                    let top: TrustedOperation = PublicGetter::ceremony_reward(shard)
-                        .into();
+                    let top: TrustedOperation = PublicGetter::ceremony_reward(shard).into();
                     if let Some(v) = perform_operation(matches, &top) {
                         if let Ok(vd) = BalanceType::decode(&mut v.as_slice()) {
                             println!("  ceremony reward: {}", vd);
-                        } else { println!("  ceremony reward: error decoding"); }
-                    } else { println!("  ceremony reward: unknown"); };
+                        } else {
+                            println!("  ceremony reward: error decoding");
+                        }
+                    } else {
+                        println!("  ceremony reward: unknown");
+                    };
 
-                    let top: TrustedOperation = PublicGetter::location_tolerance(shard)
-                        .into();
+                    let top: TrustedOperation = PublicGetter::location_tolerance(shard).into();
                     if let Some(v) = perform_operation(matches, &top) {
                         if let Ok(vd) = u32::decode(&mut v.as_slice()) {
                             println!("  location tolerance: {}m", vd);
-                        } else { println!("  location tolerance: error decoding"); }
-                    } else { println!("  location tolerance: unknown"); };
+                        } else {
+                            println!("  location tolerance: error decoding");
+                        }
+                    } else {
+                        println!("  location tolerance: unknown");
+                    };
 
-                    let top: TrustedOperation = PublicGetter::time_tolerance(shard)
-                        .into();
+                    let top: TrustedOperation = PublicGetter::time_tolerance(shard).into();
                     if let Some(v) = perform_operation(matches, &top) {
                         if let Ok(vd) = Moment::decode(&mut v.as_slice()) {
                             println!("  time tolerance: {}ms", vd);
-                        } else { println!("  time tolerance: unknown nodecode"); }
-                    } else { println!("  time tolerance: unknown"); };
+                        } else {
+                            println!("  time tolerance: unknown nodecode");
+                        }
+                    } else {
+                        println!("  time tolerance: unknown");
+                    };
 
-                    let top: TrustedOperation = PublicGetter::scheduler_state(shard)
-                        .into();
+                    let top: TrustedOperation = PublicGetter::scheduler_state(shard).into();
                     if let Some(v) = perform_operation(matches, &top) {
                         type SchedulerState = (CeremonyIndexType, CeremonyPhaseType, BlockNumber);
                         if let Ok(vd) = SchedulerState::decode(&mut v.as_slice()) {
                             println!("  ceremony index: {}", vd.0);
                             println!("  ceremony phase: {:?}", vd.1);
                             println!("  block number (sync height): {:?}", vd.2);
-                        } else { println!("  scheduler state: decoding error"); }
-                    } else { println!("  scheduler state: unknown"); };
+                        } else {
+                            println!("  scheduler state: decoding error");
+                        }
+                    } else {
+                        println!("  scheduler state: unknown");
+                    };
 
                     Ok(())
                 }),
@@ -325,14 +358,17 @@ pub fn cmd<'a>(
                     );
                     let proof = if matches.is_present("reputation") {
                         Some(prove_attendance(&accountid, shard, cindex - 1, &who))
-                    } else { None };
+                    } else {
+                        None
+                    };
                     println!("reputation: {:?}", proof);
                     let top: TrustedOperation = TrustedCall::ceremonies_register_participant(
                         sr25519_core::Public::from(who.public()),
                         shard, // for encointer we assume that every currency has its own shard. so shard == cid
-                        proof)
-                        .sign(&sr25519_core::Pair::from(who), nonce, &mrenclave, &shard)
-                        .into();
+                        proof,
+                    )
+                    .sign(&sr25519_core::Pair::from(who), nonce, &mrenclave, &shard)
+                    .into();
                     perform_operation(matches, &top);
                     Ok(())
                 }),
@@ -341,31 +377,28 @@ pub fn cmd<'a>(
             Command::new("get-registration")
                 .description("get participant registration index for next encointer ceremony")
                 .options(|app| {
-                    app.setting(AppSettings::ColoredHelp)
-                        .arg(
-                            Arg::with_name("accountid")
-                                .takes_value(true)
-                                .required(true)
-                                .value_name("SS58")
-                                .help("AccountId in ss58check format"),
-                        )
+                    app.setting(AppSettings::ColoredHelp).arg(
+                        Arg::with_name("accountid")
+                            .takes_value(true)
+                            .required(true)
+                            .value_name("SS58")
+                            .help("AccountId in ss58check format"),
+                    )
                 })
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
                     let arg_who = matches.value_of("accountid").unwrap();
                     let who = get_pair_from_str(matches, arg_who);
                     let (_mrenclave, shard) = get_identifiers(matches);
-                    debug!(
-                        "send TrustedGetter::get_registration for {}",
-                        who.public()
-                    );
+                    debug!("send TrustedGetter::get_registration for {}", who.public());
                     let top: TrustedOperation = TrustedGetter::participant_index(
                         sr25519_core::Public::from(who.public()),
                         shard, // for encointer we assume that every currency has its own shard. so shard == cid
                     )
-                        .sign(&sr25519_core::Pair::from(who))
-                        .into();
+                    .sign(&sr25519_core::Pair::from(who))
+                    .into();
                     let part = perform_operation(matches, &top).unwrap();
-                    let participant: ParticipantIndexType = Decode::decode(&mut part.as_slice()).unwrap();
+                    let participant: ParticipantIndexType =
+                        Decode::decode(&mut part.as_slice()).unwrap();
                     println!("{}", participant);
                     Ok(())
                 }),
@@ -374,14 +407,13 @@ pub fn cmd<'a>(
             Command::new("get-meetup")
                 .description("query meetup index assigned to account")
                 .options(|app| {
-                    app.setting(AppSettings::ColoredHelp)
-                        .arg(
-                            Arg::with_name("accountid")
-                                .takes_value(true)
-                                .required(true)
-                                .value_name("SS58")
-                                .help("AccountId in ss58check format"),
-                        )
+                    app.setting(AppSettings::ColoredHelp).arg(
+                        Arg::with_name("accountid")
+                            .takes_value(true)
+                            .required(true)
+                            .value_name("SS58")
+                            .help("AccountId in ss58check format"),
+                    )
                 })
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
                     match get_meetup_index_and_location(perform_operation, matches) {
@@ -408,7 +440,7 @@ pub fn cmd<'a>(
                                 .takes_value(true)
                                 .required(true)
                                 .multiple(true)
-                                .min_values(2)
+                                .min_values(2),
                         )
                 })
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
@@ -416,8 +448,10 @@ pub fn cmd<'a>(
                     let who = get_pair_from_str(matches, arg_who);
                     let (mrenclave, shard) = get_identifiers(matches);
                     let nonce = 0; // FIXME: hard coded for now
-                    let attestation_args: Vec<_> = matches.values_of("attestations").unwrap().collect();
-                    let mut attestations: Vec<Attestation<MultiSignature, AccountId32, Moment>> = vec![];
+                    let attestation_args: Vec<_> =
+                        matches.values_of("attestations").unwrap().collect();
+                    let mut attestations: Vec<Attestation<MultiSignature, AccountId32, Moment>> =
+                        vec![];
                     for arg in attestation_args.iter() {
                         let w = Attestation::decode(&mut &hex::decode(arg).unwrap()[..]).unwrap();
                         attestations.push(w);
@@ -431,8 +465,8 @@ pub fn cmd<'a>(
                         sr25519_core::Public::from(who.public()),
                         attestations,
                     )
-                        .sign(&sr25519_core::Pair::from(who), nonce, &mrenclave, &shard)
-                        .into();
+                    .sign(&sr25519_core::Pair::from(who), nonce, &mrenclave, &shard)
+                    .into();
                     perform_operation(matches, &top);
                     Ok(())
                 }),
@@ -441,31 +475,28 @@ pub fn cmd<'a>(
             Command::new("get-attestations")
                 .description("get attestations registration index for this encointer ceremony")
                 .options(|app| {
-                    app.setting(AppSettings::ColoredHelp)
-                        .arg(
-                            Arg::with_name("accountid")
-                                .takes_value(true)
-                                .required(true)
-                                .value_name("SS58")
-                                .help("AccountId in ss58check format"),
-                        )
+                    app.setting(AppSettings::ColoredHelp).arg(
+                        Arg::with_name("accountid")
+                            .takes_value(true)
+                            .required(true)
+                            .value_name("SS58")
+                            .help("AccountId in ss58check format"),
+                    )
                 })
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
                     let arg_who = matches.value_of("accountid").unwrap();
                     let who = get_pair_from_str(matches, arg_who);
                     let (_mrenclave, shard) = get_identifiers(matches);
-                    println!(
-                        "send TrustedGetter::get_attestations for {}",
-                        who.public(),
-                    );
+                    println!("send TrustedGetter::get_attestations for {}", who.public(),);
                     let top: TrustedOperation = TrustedGetter::attestations(
                         sr25519_core::Public::from(who.public()),
                         shard, // for encointer we assume that every currency has its own shard. so shard == cid
                     )
-                        .sign(&sr25519_core::Pair::from(who))
-                        .into();
+                    .sign(&sr25519_core::Pair::from(who))
+                    .into();
                     let att_enc = perform_operation(matches, &top).unwrap();
-                    let attestations: Vec<AccountId> = Decode::decode(&mut att_enc.as_slice()).unwrap();
+                    let attestations: Vec<AccountId> =
+                        Decode::decode(&mut att_enc.as_slice()).unwrap();
                     println!("Attestations: {:?}", attestations);
                     Ok(())
                 }),
@@ -483,9 +514,16 @@ pub fn cmd<'a>(
                                 .help("AccountId in ss58check format"),
                         )
                         .arg(
-                            Arg::with_name("n-participants")
+                            Arg::with_name("accountid")
                                 .takes_value(true)
                                 .required(true)
+                                .value_name("SS58")
+                                .help("AccountId in ss58check format"),
+                        )
+                        .arg(
+                            Arg::with_name("n-participants")
+                                .takes_value(true)
+                                .required(true),
                         )
                 })
                 .runner(move |_args: &str, matches: &ArgMatches<'_>| {
@@ -500,18 +538,17 @@ pub fn cmd<'a>(
                         .unwrap();
 
                     let (_mrenclave, shard) = get_identifiers(matches);
-                    let (mindex, mlocation) = match get_meetup_index_and_location(
-                        perform_operation,
-                        matches,
-                    ) {
-                        Ok((m, l)) => (m, l),
-                        Err(e) => panic!(e),
-                    };
+                    let (mindex, mlocation) =
+                        match get_meetup_index_and_location(perform_operation, matches) {
+                            Ok((m, l)) => (m, l),
+                            Err(e) => panic!(e),
+                        };
 
                     let api = get_chain_api(matches);
                     let mtime = get_meetup_time(&api, mlocation);
                     info!("meetup time: {:?}", mtime);
-                    let cindex = api.get_storage_value("EncointerScheduler", "CurrentCeremonyIndex", None)
+                    let cindex = api
+                        .get_storage_value("EncointerScheduler", "CurrentCeremonyIndex", None)
                         .unwrap();
 
                     let claim = ClaimOfAttendance::<AccountId, Moment> {
@@ -542,23 +579,25 @@ pub fn cmd<'a>(
                                 .help("AccountId in ss58check format"),
                         )
                         .arg(
-                            Arg::with_name("claim")
+                            Arg::with_name("signer")
                                 .takes_value(true)
                                 .required(true)
+                                .value_name("SS58")
+                                .help("AccountId in ss58check format"),
                         )
+                        .arg(Arg::with_name("claim").takes_value(true).required(true))
                 })
                 .runner(|_args: &str, matches: &ArgMatches<'_>| {
                     let signer_arg = matches.value_of("signer").unwrap();
                     let claim = ClaimOfAttendance::decode(
                         &mut &hex::decode(matches.value_of("claim").unwrap()).unwrap()[..],
                     )
-                        .unwrap();
+                    .unwrap();
                     let attestation = sign_claim(matches, claim, signer_arg);
                     println!("{}", hex::encode(attestation.encode()));
                     Ok(())
                 }),
         )
-
         .into_cmd("trusted")
 }
 
@@ -611,7 +650,8 @@ fn get_pair_from_str(matches: &ArgMatches<'_>, account: &str) -> sr25519::AppPai
         _ => {
             info!("fetching from keystore at {}", &KEYSTORE_PATH);
             // open store without password protection
-            let store = LocalKeystore::open(get_keystore_path(matches), None).expect("store should exist");
+            let store =
+                LocalKeystore::open(get_keystore_path(matches), None).expect("store should exist");
             info!("store opened");
             let _pair = store
                 .key_pair::<sr25519::AppPair>(
@@ -650,58 +690,72 @@ fn get_demurrage_per_block(api: &Api<sr25519::Pair>, cid: CurrencyIdentifier) ->
     cp.demurrage_per_block
 }
 
-fn apply_demurrage(entry: BalanceEntry<BlockNumber>, current_block: BlockNumber, demurrage_per_block: BalanceType) -> BalanceType {
+fn apply_demurrage(
+    entry: BalanceEntry<BlockNumber>,
+    current_block: BlockNumber,
+    demurrage_per_block: BalanceType,
+) -> BalanceType {
     let elapsed_time_block_number = current_block.checked_sub(entry.last_update).unwrap();
-    let elapsed_time_u32: u32 = elapsed_time_block_number.into();
+    let elapsed_time_u32: u32 = elapsed_time_block_number;
     let elapsed_time = BalanceType::from_num(elapsed_time_u32);
     let exponent: BalanceType = -demurrage_per_block * elapsed_time;
-    debug!("demurrage per block {}, current_block {}, last {}, elapsed_blocks {}", demurrage_per_block, current_block, entry.last_update, elapsed_time);
+    debug!(
+        "demurrage per block {}, current_block {}, last {}, elapsed_blocks {}",
+        demurrage_per_block, current_block, entry.last_update, elapsed_time
+    );
     let exp_result: BalanceType = exp(exponent).unwrap();
     entry.principal.checked_mul(exp_result).unwrap()
 }
 
 fn get_current_phase(api: &Api<sr25519::Pair>) -> CeremonyPhaseType {
     api.get_storage_value("EncointerScheduler", "CurrentPhase", None)
-        .or(Some(CeremonyPhaseType::default()))
+        .or_else(|| Some(CeremonyPhaseType::default()))
         .unwrap()
 }
 
 fn get_meetup_index_and_location<'a>(
     perform_operation: &'a dyn Fn(&ArgMatches<'_>, &TrustedOperation) -> Option<Vec<u8>>,
-    matches: &ArgMatches<'_>) -> Result<(MeetupIndexType, Location), String> {
+    matches: &ArgMatches<'_>,
+) -> Result<(MeetupIndexType, Location), String> {
     let arg_who = matches.value_of("accountid").unwrap();
     // println!("arg_who = {:?}", arg_who);
     let who = get_pair_from_str(matches, arg_who);
 
     let (_mrenclave, shard) = get_identifiers(matches);
     let top: TrustedOperation = TrustedGetter::meetup_index(who.public().into(), shard)
-        .sign(&sr25519_core::Pair::from(who.clone()))
+        .sign(&sr25519_core::Pair::from(who))
         .into();
 
     let res = perform_operation(matches, &top).unwrap();
     let m_index: MeetupIndexType = Decode::decode(&mut res.as_slice()).unwrap();
     if m_index == 0 {
-        return Err(format!("participant {} has not been assigned to a meetup. Meetup Index is 0", arg_who));
+        return Err(format!(
+            "participant {} has not been assigned to a meetup. Meetup Index is 0",
+            arg_who
+        ));
     }
 
     let api = get_chain_api(matches);
     let m_location = get_meetup_location(&api, m_index, shard);
 
     if m_location.is_none() {
-        return Err(format!("participant {} has not been assigned to a meetup. Location is None", arg_who));
+        return Err(format!(
+            "participant {} has not been assigned to a meetup. Location is None",
+            arg_who
+        ));
     };
     info!("got index {}", m_index);
     info!("got location: {:?}", m_location);
-    return Ok((m_index, m_location.unwrap()));
+    Ok((m_index, m_location.unwrap()))
 }
 
-fn get_meetup_location(api: &Api<sr25519::Pair>, m_index: MeetupIndexType, cid: CurrencyIdentifier) -> Option<Location> {
-    return api.get_storage_map(
-        "EncointerCurrencies",
-        "Locations",
-        cid,
-        None,
-    ).map(|locs: Vec<Location>| locs[m_index as usize]);
+fn get_meetup_location(
+    api: &Api<sr25519::Pair>,
+    m_index: MeetupIndexType,
+    cid: CurrencyIdentifier,
+) -> Option<Location> {
+    api.get_storage_map("EncointerCurrencies", "Locations", cid, None)
+        .map(|locs: Vec<Location>| locs[m_index as usize])
 }
 
 fn get_meetup_time(api: &Api<sr25519::Pair>, mlocation: Location) -> Option<Moment> {
@@ -709,39 +763,44 @@ fn get_meetup_time(api: &Api<sr25519::Pair>, mlocation: Location) -> Option<Mome
     // as long as the runtime pallet is rounding lon, we should do so too
     let mlon = mlon.round();
     debug!("meetup longitude: {}", mlon);
-    let next_phase_timestamp: Moment = api.get_storage_value(
-        "EncointerScheduler",
-        "NextPhaseTimestamp",
-        None,
-    ).unwrap();
+    let next_phase_timestamp: Moment = api
+        .get_storage_value("EncointerScheduler", "NextPhaseTimestamp", None)
+        .unwrap();
     debug!("next phase timestamp: {}", next_phase_timestamp);
 
     let attesting_start = match get_current_phase(api) {
         CeremonyPhaseType::ASSIGNING => next_phase_timestamp, // - next_phase_timestamp.rem(ONE_DAY),
         CeremonyPhaseType::ATTESTING => {
-            let attesting_duration: Moment = api.get_storage_map(
-                "EncointerScheduler",
-                "PhaseDurations",
-                CeremonyPhaseType::ATTESTING,
-                None,
-            ).unwrap();
+            let attesting_duration: Moment = api
+                .get_storage_map(
+                    "EncointerScheduler",
+                    "PhaseDurations",
+                    CeremonyPhaseType::ATTESTING,
+                    None,
+                )
+                .unwrap();
             next_phase_timestamp - attesting_duration //- next_phase_timestamp.rem(ONE_DAY)
         }
-        CeremonyPhaseType::REGISTERING => panic!("ceremony phase must be ASSIGNING or ATTESTING to request meetup location.")
+        CeremonyPhaseType::REGISTERING => {
+            panic!("ceremony phase must be ASSIGNING or ATTESTING to request meetup location.")
+        }
     };
     debug!("attesting start at: {}", attesting_start);
-    let mtime = (
-        (attesting_start + ONE_DAY / 2) as i64 - (mlon * (ONE_DAY as f64) / 360.0) as i64
-    ) as Moment;
+    let mtime = ((attesting_start + ONE_DAY / 2) as i64 - (mlon * (ONE_DAY as f64) / 360.0) as i64)
+        as Moment;
     debug!("meetup time at lon {}: {:?}", mlon, mtime);
     Some(mtime)
 }
 
-fn sign_claim(matches: &ArgMatches<'_>, claim: ClaimOfAttendance<AccountId, Moment>, account_str: &str) -> Attestation<Signature, AccountId, Moment> {
+fn sign_claim(
+    matches: &ArgMatches<'_>,
+    claim: ClaimOfAttendance<AccountId, Moment>,
+    account_str: &str,
+) -> Attestation<Signature, AccountId, Moment> {
     let pair = get_pair_from_str(matches, account_str);
     let accountid = get_accountid_from_str(account_str);
     Attestation {
-        claim: claim.clone(),
+        claim,
         signature: Signature::from(sr25519_core::Signature::from(pair.sign(&claim.encode()))),
         public: accountid,
     }
@@ -758,8 +817,11 @@ fn prove_attendance(
     cindex: CeremonyIndexType,
     attendee: &sr25519::AppPair,
 ) -> ProofOfAttendance<Signature, AccountId32> {
-    let msg = (prover.clone(), cindex);
-    debug!("generating proof of attendance for {} and cindex: {}", prover, cindex);
+    let msg = (*prover, cindex);
+    debug!(
+        "generating proof of attendance for {} and cindex: {}",
+        prover, cindex
+    );
     debug!("signature payload is {:x?}", msg.encode());
     ProofOfAttendance {
         prover_public: AccountId32::from(*prover),
