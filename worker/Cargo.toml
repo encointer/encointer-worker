@@ -47,7 +47,7 @@ path = "worker-api"
 
 [dependencies.my-node-runtime]
 git = "https://github.com/encointer/encointer-node"
-tag = "v0.3.7-tee"
+tag = "v0.3.8-tee"
 package = "encointer-node-teeproxy-runtime"
 
 [dependencies.sp-finality-grandpa]
