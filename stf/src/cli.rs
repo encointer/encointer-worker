@@ -514,13 +514,6 @@ pub fn cmd<'a>(
                                 .help("AccountId in ss58check format"),
                         )
                         .arg(
-                            Arg::with_name("accountid")
-                                .takes_value(true)
-                                .required(true)
-                                .value_name("SS58")
-                                .help("AccountId in ss58check format"),
-                        )
-                        .arg(
                             Arg::with_name("n-participants")
                                 .takes_value(true)
                                 .required(true),
@@ -571,13 +564,6 @@ pub fn cmd<'a>(
                 .description("sign someone's claim to attest personhood")
                 .options(|app| {
                     app.setting(AppSettings::ColoredHelp)
-                        .arg(
-                            Arg::with_name("signer")
-                                .takes_value(true)
-                                .required(true)
-                                .value_name("SS58")
-                                .help("AccountId in ss58check format"),
-                        )
                         .arg(
                             Arg::with_name("signer")
                                 .takes_value(true)
