@@ -71,7 +71,7 @@ fi
 read MRENCLAVE <<< $($CLIENT list-workers | awk '/  MRENCLAVE: / { print $2 }')
 #cid=7eLSZLSMShw4ju9GvuMmoVgeZxZimtvsGTSvLEdvcRqQ
 #MRENCLAVE=6AkpQeSLGSwESvKMiygJzDTLHXvnwBG9c8Q8FV9LiDuN
-MRENCLAVE=7ZUyKfVzVMH5S2hDSZ7x5fpHjmx8FMBbgyGKbYymbCbx
+#MRENCLAVE=7ZUyKfVzVMH5S2hDSZ7x5fpHjmx8FMBbgyGKbYymbCbx
 
 echo "  MRENCLAVE = ${MRENCLAVE}"
 

@@ -1,6 +1,6 @@
 [package]
 name = "encointer-worker"
-version = "0.7.0"
+version = "0.7.1"
 authors = ["Supercomputing Systems AG <info@scs.ch>"]
 build = "build.rs"
 edition = "2018"
