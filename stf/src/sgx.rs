@@ -209,7 +209,7 @@ impl Stf {
     }
 
     pub fn get_state(ext: &mut State, getter: Getter) -> Option<Vec<u8>> {
-        ext.execute_with(|| 
+        ext.execute_with(||
             match getter {
                 Getter::trusted(g) => match g.getter {
                     TrustedGetter::balance(who, cid) => {
@@ -251,7 +251,7 @@ impl Stf {
                                 warn!("querying participant count during registering phase not allowed for privacy reasons");
                                 None
                             },
-                            _ => { 
+                            _ => {
                                 let count = encointer_ceremonies::Module::<sgx_runtime::Runtime>::participant_count((cid, c_index));
                                 Some(count.encode())
                             }
@@ -273,18 +273,18 @@ impl Stf {
                     PublicGetter::time_tolerance(_cid)   => {
                         let tol = encointer_ceremonies::Module::<sgx_runtime::Runtime>::time_tolerance();
                         Some(tol.encode())
-                    },  
+                    },
                     PublicGetter::scheduler_state(_cid)   => {
                         let cindex = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_ceremony_index();
                         let phase = encointer_scheduler::Module::<sgx_runtime::Runtime>::current_phase();
                         let number = if let Some(bn) = sp_io::storage::get(&storage_value_key("System", "Number")) {
-                            if let Ok(bnd) = BlockNumber::decode(&mut bn.as_slice()) 
+                            if let Ok(bnd) = BlockNumber::decode(&mut bn.as_slice())
                                 { bnd }
                             else { 0 }
                         } else { 0 };
                         info!("scheduler state: cindex={}, phase={:?}, blocknumber={}", cindex, phase, number);
                         Some((cindex, phase, number).encode())
-                    }  
+                    }
                 }
             }
         )

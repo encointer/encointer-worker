@@ -741,7 +741,7 @@ fn get_meetup_location(
     cid: CurrencyIdentifier,
 ) -> Option<Location> {
     api.get_storage_map("EncointerCurrencies", "Locations", cid, None)
-        .map(|locs: Vec<Location>| locs[(m_index -1)  as usize])
+        .map(|locs: Vec<Location>| locs[(m_index - 1) as usize])
 }
 
 fn get_meetup_time(api: &Api<sr25519::Pair>, mlocation: Location) -> Option<Moment> {
