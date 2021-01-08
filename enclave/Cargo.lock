@@ -2336,7 +2336,7 @@ source = "git+https://github.com/paritytech/substrate.git?rev=a208da16#a208da160
 
 [[package]]
 name = "substratee-node-primitives"
-version = "0.6.14"
+version = "0.7.0"
 dependencies = [
  "parity-scale-codec",
  "primitive-types 0.6.2",
@@ -2346,7 +2346,7 @@ dependencies = [
 
 [[package]]
 name = "substratee-stf"
-version = "0.6.14"
+version = "0.7.0"
 dependencies = [
  "derive_more",
  "env_logger",
@@ -2370,7 +2370,7 @@ dependencies = [
 
 [[package]]
 name = "substratee-worker-enclave"
-version = "0.6.16"
+version = "0.7.0"
 dependencies = [
  "aes",
  "base64 0.10.1 (git+https://github.com/mesalock-linux/rust-base64-sgx?rev=sgx_1.1.3)",

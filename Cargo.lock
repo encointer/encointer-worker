@@ -896,7 +896,7 @@ checksum = "e78d4f1cc4ae33bbfc157ed5d5a5ef3bc29227303d595861deb238fcec4e9457"
 
 [[package]]
 name = "encointer-client-teeproxy"
-version = "0.6.15"
+version = "0.7.0"
 dependencies = [
  "base58",
  "blake2-rfc",
@@ -973,7 +973,7 @@ dependencies = [
 
 [[package]]
 name = "encointer-worker"
-version = "0.6.16"
+version = "0.7.0"
 dependencies = [
  "base58",
  "cid",
@@ -5058,7 +5058,7 @@ source = "git+https://github.com/paritytech/substrate.git?rev=a208da16#a208da160
 
 [[package]]
 name = "substratee-node-primitives"
-version = "0.6.14"
+version = "0.7.0"
 dependencies = [
  "base58",
  "encointer-node-teeproxy-runtime",
@@ -5073,7 +5073,7 @@ dependencies = [
 
 [[package]]
 name = "substratee-stf"
-version = "0.6.14"
+version = "0.7.0"
 dependencies = [
  "base58",
  "clap",
@@ -5107,7 +5107,7 @@ dependencies = [
 
 [[package]]
 name = "substratee-worker-api"
-version = "0.6.16"
+version = "0.7.0"
 dependencies = [
  "hex 0.4.2",
  "log 0.4.11 (registry+https://github.com/rust-lang/crates.io-index)",
